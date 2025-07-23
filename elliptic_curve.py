@@ -1,16 +1,10 @@
+"""
+Defines classes for working with elliptic curves over finite fields (modulo a prime p).
 
-
-# Définir une courbe elliptique simplifiée
-# y² = x³ + ax + b sur ℤ/pℤ
-# p = 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31
-
-
-
-
-# Définir les points P et Q
-# P est le générateur
-# Q = k·P pour un k secret (que tu caches)
-
+Includes:
+- class Point: represents a point (x, y) on the curve or the point at infinity
+- class EllipticCurve: represents a short Weierstrass elliptic curve of the form y² = x³ + ax + b over ℤ/pℤ, and provides point addition and scalar multiplication
+"""
 
 
 class Point:
@@ -83,6 +77,12 @@ class EllipticCurve:
         self.a, self.b, self.p = a, b, p
     
     def add_points(self, P, Q):
+        """Addition of two points on the elliptic curve.
+
+        :param P: first point
+        :param Q: second point
+        :return: resulting point
+        """
         
         # Case of an infinity point
         if P.at_infinity:
@@ -109,18 +109,41 @@ class EllipticCurve:
 
         return Point(x_r, y_r, self)
     
-    def scalar_mul(self, p, k):
-        pass
+    def scalar_mul(self, k, P):
+        """Perform scalar multiplication of a point on 
+        the elliptic curve with the double-and-add method
+
+        :param k: integer scalar to multiply
+        :param P: Point on the elliptic curve
+        :return: Resulting point after multiplying P by k
+        """
+
+        if k % self.p == 0 or P.at_infinity:
+            return Point.infinity(self)
+
+        result = Point.infinity(self)
+        addend = P
+
+        while k > 0:
+            if k & 1:  # if bit is 1, add the addend to the result if k is odd
+                result = result + addend
+            addend = addend + addend
+            k >>= 1  # divide by 2
+
+        return result
 
 
 
-# Test 
-E = EllipticCurve(a=2, b=3, p=97)
-P = Point(3, 6, E)
-O = Point.infinity(E)
+# Test
 
-print(P)
-print(-P)
-print(P + O)  # doit afficher (3, 6)
-print(P + (-P))  # doit afficher ∞
-print(P + P)
+p = 97
+E = EllipticCurve(a=2, b=3, p=p)
+P = Point(3, 9, E)
+
+k = 5
+Q = E.scalar_mul(k, P)
+print(f"{k} * P = {Q}")
+
+
+Q_manual = P + P + P + P + P
+print(f"Manual check : {Q_manual}")
