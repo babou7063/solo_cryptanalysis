@@ -131,11 +131,28 @@ class EllipticCurve:
             k >>= 1  # divide by 2
 
         return result
+    
+    def find_order(self, P, max_iter=1000):
+        """Compute the order of a point on the elliptic curve.
+        
+        :param P: point on the elliptic curve
+        :param max_iter: maximum number of iterations to compute the order (default: 1000), limite to avoid loops
+        :return: the order of the point
+        :raises ValueError: if the order is not found within max_iter iterations
+        """
+        assert not P.at_infinity, "Cannot compute order of the point at infinity."
+        
+        R = P
+        for n in range(1, max_iter + 1):
+            if R.at_infinity:
+                return n
+            R = R + P
+        raise ValueError("Point order not found within max_iter")
 
 
 
-# Test
 
+""" Test
 p = 97
 E = EllipticCurve(a=2, b=3, p=p)
 P = Point(3, 9, E)
@@ -147,3 +164,12 @@ print(f"{k} * P = {Q}")
 
 Q_manual = P + P + P + P + P
 print(f"Manual check : {Q_manual}")
+
+p = 97
+a = 2
+b = 3
+curve = EllipticCurve(a, b, p)
+P = Point(95, 6, curve)
+order = curve.find_order(P)
+print(f"Order of P: {order}")
+"""
