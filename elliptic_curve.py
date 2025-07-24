@@ -85,6 +85,8 @@ class EllipticCurve:
         """
         
         # Case of an infinity point
+        if P.at_infinity and Q.at_infinity:
+            return Point.infinity(self)
         if P.at_infinity:
             return Q
         if Q.at_infinity:
