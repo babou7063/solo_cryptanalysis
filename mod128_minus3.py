@@ -24,11 +24,12 @@ class Mod128Minus3Element:
 
     @staticmethod
     def from_int(n):
-        """
-        Create a Mod128Minus3Element from an integer n.
+        """Convert an integer to a Mod128Minus3Element.
         Uses base-2^12.8 decomposition.
-        """
         
+        :param n: the integer to convert
+        :return: the corresponding Mod128Minus3Element
+        """
         coeffs = []
         for exp in Mod128Minus3Element.BASE_EXPONENTS:
             mask = (1 << 13) - 1
@@ -36,36 +37,49 @@ class Mod128Minus3Element:
             n >>= 13
         return Mod128Minus3Element(coeffs)
 
-    def to_int(self):
+    def to_int(self): 
+        """Reconstruct the integer value (not reduced modulo 2^128 - 3).
+        
+        :return: Integer representation of the element
         """
-        Reconstruct the integer value (not reduced modulo 2^128 - 3).
-        """
+
         result = 0
         for i, fi in enumerate(self.coeffs):
             result += fi << self.BASE_EXPONENTS[i]
         return result
+    
+    def __eq__(self, other):
+        return self.reduce().to_int() == other.reduce().to_int()
 
     def __add__(self, other):
-        """
-        Add two elements coefficient-wise.
+        """Add two elements coefficient-wise.
+
+        :param other: the other element to add
+        :return: the sum of the two elements
         """
         return Mod128Minus3Element([
             self.coeffs[i] + other.coeffs[i] for i in range(10)
         ])
 
     def __sub__(self, other):
-        """
-        Subtract two elements coefficient-wise.
+        """Subtract two elements coefficient-wise.
+
+        :param other: the other element to subtract
+        :return: the difference of the two elements
         """
         return Mod128Minus3Element([
             self.coeffs[i] - other.coeffs[i] for i in range(10)
         ])
     
-    def __mul__(self, other):
+    def __mul__(self, other):    
         """
         Multiply two elements modulo 2^128 - 3 (before reduction).
         Returns a new Mod128Minus3Element instance.
+
+        :param other: The Mod128Minus3Element to multiply with
+        :return: A new Mod128Minus3Element representing the product
         """
+
         f = self.coeffs
         g = other.coeffs
         r = [0] * 10  # result
@@ -86,8 +100,11 @@ class Mod128Minus3Element:
     
     def reduce(self):
         """
+        TODO : name from where this method comes
         Reduce coefficients using carry chain from r0 -> r1 -> ... -> r9 -> r0 -> r1
         Ensures all coefficients are bounded appropriately.
+
+        :return: this element, with coefficients reduced modulo 2^128 - 3
         """
         r = self.coeffs[:]  # copy to avoid in-place issues
 
@@ -125,6 +142,8 @@ class Mod128Minus3Element:
     def square(self):
         """
         Optimized squaring: avoids redundant terms and reuses symmetric products.
+
+        :return: A new Mod128Minus3Element representing the square of self
         """
         f = self.coeffs
         r = [0] * 10
@@ -148,6 +167,29 @@ class Mod128Minus3Element:
 
         result = Mod128Minus3Element(r)
         return result.reduce()
+    
+    def __pow__(self, exponent, modulo=None):
+        """
+        Modular exponentiation (right-to-left binary method).
+
+        :param exponent: The exponent to raise the element to
+        :param modulo: Ignored, here for compatibility with built-in pow()
+        :return: The result of self raised to the power of exponent, modulo 2^128 - 3
+        """
+        if exponent < 0:
+            raise ValueError("Negative exponents not supported (modular inverse not defined here).")
+
+        result = Mod128Minus3Element.from_int(1)
+        base = self.copy()
+
+        while exponent > 0:
+            if exponent % 2 == 1:
+                result = (result * base).reduce()
+            base = base.square()
+            exponent >>= 1
+
+        return result
+
 
 
 
