@@ -1,6 +1,7 @@
 from elliptic_curve import Point, EllipticCurve
 from utils import modinv
 import random
+import matplotlib.pyplot as plt
 
 def partition(point, r):
     """
@@ -78,10 +79,14 @@ def pollard_rho(P, Q, order, curve, r=3):
     A2 = a
     B2 = b
     R2 = W
+    
+    trace = [(R.x, R.y)]
+
 
     while True:
         # Tortoise: 1 step
         R, A, B = update(R, A, B, P, Q, order, r)
+        trace.append((R.x, R.y))
         
         # Hare: 2 steps
         for _ in range(2):
@@ -92,7 +97,7 @@ def pollard_rho(P, Q, order, curve, r=3):
             if (B - B2) % order == 0:
                 raise Exception("Failure: b - b' ≡ 0 mod order, try again with different start")
             k = ((A - A2) * modinv(B2 - B, order)) % order
-            return k
+            return k, trace
 
 
 
@@ -106,6 +111,7 @@ curve = EllipticCurve(a, b, p)
 # Point P sur la courbe (ordre order connu)
 P = Point(3, 6, curve)
 
+
 # TODO : fct pour trouver ordre de P
 order = curve.find_order(P)  # ordre connu de P (exemple réduit pour test rapide)
 print("Order of P:", order)
@@ -114,6 +120,7 @@ print("Order of P:", order)
 k_secret = 4
 Q = curve.scalar_mul(k_secret, P)
 
+"""
 print(f"Trying to find k such that Q = kP")
 print(f"P = {P}")
 print(f"Q = {Q}")
@@ -123,3 +130,12 @@ k_found = pollard_rho(P, Q, order, curve)
 
 print(f"Found k = {k_found}")
 assert k_found == k_secret % order
+"""
+
+
+# Plotting
+k_found, trace_points = pollard_rho(P, Q, order, curve)
+x_vals, y_vals = zip(*trace_points)
+
+print(x_vals)
+print(y_vals)
