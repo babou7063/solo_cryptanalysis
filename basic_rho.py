@@ -2,8 +2,6 @@ from elliptic_curve import Point, EllipticCurve
 from utils import modinv
 import random
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import numpy as np
 
 def partition(point, r):
     """
@@ -137,15 +135,18 @@ assert k_found == k_secret % order
 
 # Plotting
 k_found, trace_points = pollard_rho(P, Q, order, curve)
-x_vals, y_vals = zip(*trace_points)
-print(x_vals)
-print(y_vals)
 
 plt.figure(figsize=(8, 6))
-plt.scatter(x_vals, y_vals, c=range(len(trace_points)), cmap=cm.viridis, s=60, edgecolor='k')
-plt.title("Visualization of the steps of Pollard’s rho")
+plt.title("Visualization of the steps of Pollard’s rho algorithm")
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.grid(True)
-plt.colorbar(label="Step of the algorithm")
+
+for i in range(1, len(trace_points)):
+    x1, y1 = trace_points[i - 1]
+    x2, y2 = trace_points[i]
+    plt.plot([x1, x2], [y1, y2], 'k-', linewidth=0.5)
+    plt.scatter(x2, y2, color='blue', s=40)
+    plt.pause(0.4)
+
 plt.show()
