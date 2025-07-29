@@ -2,6 +2,7 @@ from elliptic_curve import Point, EllipticCurve
 from utils import modinv
 import random
 import matplotlib.pyplot as plt
+import time
 
 def partition(point, r):
     """
@@ -136,17 +137,39 @@ assert k_found == k_secret % order
 # Plotting
 k_found, trace_points = pollard_rho(P, Q, order, curve)
 
-plt.figure(figsize=(8, 6))
-plt.title("Visualization of the steps of Pollard’s rho algorithm")
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.grid(True)
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.set_title("Visualization of the steps of Pollard’s rho algorithm")
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.grid(True)
 
-for i in range(1, len(trace_points)):
+# List of points
+fig.subplots_adjust(left=0.3)
+text_box = fig.add_axes([0.05, 0.1, 0.2, 0.8])
+text_box.axis("off")
+visited_lines = []
+
+# Init
+x_prev, y_prev = trace_points[0]
+ax.scatter(x_prev, y_prev, color='red', s=40)
+visited_lines.append(f"{0}: ({x_prev}, {y_prev})")
+text_box.text(0, 1, "\n".join(visited_lines), fontsize=9, va='top')
+
+# Animation
+for i in range(1, len(trace_points) + 1):
     x1, y1 = trace_points[i - 1]
-    x2, y2 = trace_points[i]
-    plt.plot([x1, x2], [y1, y2], 'k-', linewidth=0.5)
-    plt.scatter(x2, y2, color='blue', s=40)
-    plt.pause(0.4)
+    x2, y2 = trace_points[i % len(trace_points)]  # boucle
+
+    # points and lines
+    ax.plot([x1, x2], [y1, y2], 'k-', linewidth=0.5)
+    ax.scatter(x2, y2, color='blue', s=40)
+
+    # list
+    visited_lines.append(f"{i%len(trace_points)}: ({x2}, {y2})")
+    text_box.clear()
+    text_box.axis("off")
+    text_box.text(0, 1, "\n".join(visited_lines[-25:]), fontsize=9, va='top')
+
+    plt.pause(0.3)
 
 plt.show()
