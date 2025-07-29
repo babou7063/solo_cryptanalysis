@@ -158,7 +158,16 @@ text_box.text(0, 1, "\n".join(visited_lines), fontsize=9, va='top')
 # Animation
 for i in range(1, len(trace_points) + 1):
     x1, y1 = trace_points[i - 1]
-    x2, y2 = trace_points[i % len(trace_points)]  # boucle
+    x2, y2 = trace_points[i % len(trace_points)]
+    
+    if None in (x1, x2, y1, y2):
+        visited_lines.append(f"{i%len(trace_points)}: ({x2}, {y2})")
+        text_box.clear()
+        text_box.axis("off")
+        text_box.text(0, 1, "\n".join(visited_lines[-25:]), fontsize=9, va='top')
+
+    if x1 is None or x2 is None or y1 is None or y2 is None:
+        continue
 
     # points and lines
     ax.plot([x1, x2], [y1, y2], 'k-', linewidth=0.5)
@@ -170,6 +179,6 @@ for i in range(1, len(trace_points) + 1):
     text_box.axis("off")
     text_box.text(0, 1, "\n".join(visited_lines[-25:]), fontsize=9, va='top')
 
-    plt.pause(0.3)
+    plt.pause(0.5)
 
 plt.show()
