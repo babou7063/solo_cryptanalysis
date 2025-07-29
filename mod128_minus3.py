@@ -70,7 +70,9 @@ class Mod128Minus3Element:
         return Mod128Minus3Element([
             self.coeffs[i] - other.coeffs[i] for i in range(10)
         ])
-    
+
+    # Multiplication algorithm from Bernstein, Lange, Schwabe, 2010
+    # See: https://dl.acm.org/doi/10.5555/1964658.1964669
     def __mul__(self, other):    
         """
         Multiply two elements modulo 2^128 - 3 (before reduction).
@@ -84,7 +86,6 @@ class Mod128Minus3Element:
         g = other.coeffs
         r = [0] * 10  # result
 
-        # Multiplication algorithm from .... (mettre lien du papier ici)
         r[0] = f[0]*g[0] + 3*(2*f[9]*g[1] + 2*f[8]*g[2] + 2*f[7]*g[3] + 2*f[6]*g[4] + f[5]*g[5] + 2*f[4]*g[6] + 2*f[3]*g[7] + 2*f[2]*g[8] + 2*f[1]*g[9])
         r[1] = f[1]*g[0] + f[0]*g[1] + 3*(2*f[9]*g[2] + 2*f[8]*g[3] + 2*f[7]*g[4] + f[6]*g[5] + f[5]*g[6] + 2*f[4]*g[7] + 2*f[3]*g[8] + 2*f[2]*g[9])
         r[2] = f[2]*g[0] + f[1]*g[1] + f[0]*g[2] + 3*(2*f[9]*g[3] + 2*f[8]*g[4] + f[7]*g[5] + f[6]*g[6] + f[5]*g[7] + 2*f[4]*g[8] + 2*f[3]*g[9])
@@ -98,6 +99,8 @@ class Mod128Minus3Element:
 
         return Mod128Minus3Element(r)
     
+    # Reduction strategy inspired by the carry-chain optimization in the paper of Bernstein, Lange, Schwabe, 2010
+    # See: https://dl.acm.org/doi/10.5555/1964658.1964669
     def reduce(self):
         """
         TODO : name from where this method comes
