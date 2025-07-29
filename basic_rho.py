@@ -181,4 +181,16 @@ for i in range(1, len(trace_points) + 1):
 
     plt.pause(0.5)
 
+pt_last = trace_points[-1]
+pt_first = trace_points[0]
+if None not in pt_last and None not in pt_first:
+    xL, yL = pt_last
+    x0, y0 = pt_first
+    ax.plot([xL, x0], [yL, y0], 'r--', linewidth=0.5)  # ligne de retour en rouge pointillé
+    visited_lines.append(f"↩ retour vers ({x0}, {y0})")
+    text_box.clear()
+    text_box.axis("off")
+    text_box.text(0, 1, "\n".join(visited_lines[-25:]), fontsize=9, va='top')
+    plt.pause(0.5)
+
 plt.show()
