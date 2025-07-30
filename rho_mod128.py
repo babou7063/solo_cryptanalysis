@@ -81,13 +81,42 @@ class EllipticCurve:
         # Double the point to get out of the cycle
         return min_point.double().canonical_form()
 
-    def negative_additive_walk():
-        #...
-        return 7
-
-    def is_distinguished(point):
-        #...
-        return 8
+    def is_distinguished_point(self, point: Point) -> bool:
+        # Simple criterion: x-coordinate has many trailing zeros
+        x_int = point.x.to_int()
+        return (x_int & 0xFFFFF) == 0  # 20 trailing zero bits
+    
+    def negative_additive_walk(self, max_iterations: int = 1000000):
+        # Random starting point
+        a = random.randint(1, self.order - 1)
+        b = random.randint(1, self.order - 1)
+        
+        W = self.P.copy()  # Simplified starting point
+        
+        history = [W.copy()]
+        cycle_check_frequency = max(1, int(2 * (self.r ** 0.5)))  # Check every ~2√r iterations
+        
+        for i in range(max_iterations):
+            # Check for fruitless cycles periodically
+            if i % cycle_check_frequency == 0 and self.detect_fruitless_cycle(history):
+                W = self.escape_fruitless_cycle(history)
+                # Restart with new starting point
+                history = [W.copy()]
+                continue
+            
+            # Perform additive step
+            W, a, b = self.additive_walk(W, a, b)
+            history.append(W.copy())
+            
+            # Keep history bounded
+            if len(history) > 10:
+                history.pop(0)
+            
+            # Check if this is a distinguished point
+            if self.is_distinguished_point(W):
+                return W, a, b, i + 1
+        
+        return None
 
     def solve_discrete_logarithm():
         #...
