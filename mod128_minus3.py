@@ -216,6 +216,36 @@ class Point:
             return self.copy()
         else:
             return self.negate()
+    
+    def double(self):
+        
+        # Using affine coordinates: λ = 3(x^2 - 1)/(2y)
+        # x3 = λ^2 - 2x and y3 = λ(x - x3) - y
+        
+        # Compute numerator of λ
+        x_squared = self.x.square()
+        numerator = (x_squared - Mod128Minus3Element.from_int(1)) * Mod128Minus3Element.from_int(3)
+        
+        # Compute denominator of λ
+        denominator = self.y * Mod128Minus3Element.from_int(2)
+        
+        # Inverse modular of denom
+        p = (2**128 - 3) // 76439
+        denom_int = denominator.to_int() % p
+        denom_inv = pow(denom_int, p - 2, p)
+        
+        # Compute λ
+        lambda_int = (numerator.to_int() * denom_inv) % p
+        lambda_elem = Mod128Minus3Element.from_int(lambda_int)
+        
+        # x3 = λ^2 - 2x
+        lambda_squared = lambda_elem.square()
+        x3 = lambda_squared - (self.x * Mod128Minus3Element.from_int(2))
+        
+        # y3 = λ(x - x3) - y
+        y3 = (lambda_elem * (self.x - x3)) - self.y
+        
+        return Point(x3, y3)
 
 
 ######################################
