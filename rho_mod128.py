@@ -47,9 +47,15 @@ def update(a, b, z, g, h, order, r=7):
     return a_new, b_new, z_new
 
 def pollard_rho_mod128(g, h, order, r=7):
+    
+    # Random starting point: z = g^a * h^b
     a = random.randint(0, order - 1)
     b = random.randint(0, order - 1)
-    z = (g ** a * h ** b).reduce()
+    
+    # Init z = g^a * h^b
+    g_a = (g ** a).reduce()
+    h_b = (h ** b).reduce()
+    z = (g_a * h_b).reduce()
 
     A, B, Z = a, b, z.copy()
     A2, B2, Z2 = a, b, z.copy()
