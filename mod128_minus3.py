@@ -193,7 +193,29 @@ class Mod128Minus3Element:
 
         return result
 
-
+class Point:
+    def __init__(self, x: Mod128Minus3Element, y: Mod128Minus3Element):
+        self.x = x
+        self.y = y
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def copy(self):
+        return Point(self.x.copy(), self.y.copy())
+    
+    def negate(self):
+        """Return -P = (x, -y)"""
+        return Point(self.x.copy(), Mod128Minus3Element.zero() - self.y)
+    
+    def canonical_form(self):
+        """Return canonical form |P| where we choose between P and -P"""
+        # Use y-coordinate parity as in the paper
+        y_int = self.y.to_int()
+        if y_int % 2 == 0:
+            return self.copy()
+        else:
+            return self.negate()
 
 
 ######################################
