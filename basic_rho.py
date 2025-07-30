@@ -192,4 +192,4 @@ print("Order of P:", order)
 k_secret = 7
 Q = curve.scalar_mul(k_secret, P)
 
-k_found_animated = animated_visualization(P, Q, order, curve)
+#k_found_animated = animated_visualization(P, Q, order, curve)

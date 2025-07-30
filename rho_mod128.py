@@ -8,33 +8,42 @@ def partition(z, r=7):
 def update(a, b, z, g, h, order, r=7):
     zone = partition(z, r)
     if zone == 0:
+        # z := z * g, a := a + 1, b unchanged
         a_new = (a + 1) % order
         b_new = b
         z_new = (z * g).reduce()
     elif zone == 1:
+        # z := z * h, b := b + 1, a unchanged
         a_new = a
         b_new = (b + 1) % order
         z_new = (z * h).reduce()
     elif zone == 2:
+        # z := z^2, a := 2*a, b := 2*b
         a_new = (2 * a) % order
         b_new = (2 * b) % order
         z_new = z.square().reduce()
     elif zone == 3:
+        # z := z * g^2, a := a + 2, b unchanged
         a_new = (a + 2) % order
         b_new = b
         z_new = (z * g * g).reduce()
     elif zone == 4:
+        # z := z * h^2, b := b + 2, a unchanged
         a_new = a
         b_new = (b + 2) % order
         z_new = (z * h * h).reduce()
     elif zone == 5:
+        # z := z^3, a := 3*a, b := 3*b
         a_new = (3 * a) % order
         b_new = (3 * b) % order
         z_new = (z * z * z).reduce()
     else:
-        a_new = (a + b) % order
-        b_new = (b + a) % order
-        z_new = (z * g * h).reduce()
+        # z := z * g * h, a := a + 1, b := b + 1
+        a_new = (a + 1) % order
+        b_new = (b + 1) % order
+        gh = (g * h).reduce()
+        z_new = (z * gh).reduce()
+
     return a_new, b_new, z_new
 
 def pollard_rho_mod128(g, h, order, r=7):
