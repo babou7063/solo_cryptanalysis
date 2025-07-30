@@ -46,7 +46,7 @@ def update(a, b, z, g, h, order, r=7):
 
     return a_new, b_new, z_new
 
-def pollard_rho_mod128(g, h, order, r=7):
+def pollard_rho_mod128(g, h, order, r=7, max_iterations=50000):
     
     # Random starting point: z = g^a * h^b
     a = random.randint(0, order - 1)
@@ -57,19 +57,23 @@ def pollard_rho_mod128(g, h, order, r=7):
     h_b = (h ** b).reduce()
     z = (g_a * h_b).reduce()
 
-    A, B, Z = a, b, z.copy()
-    A2, B2, Z2 = a, b, z.copy()
+    # Init points of turtoise and hare
+    A_tortoise, B_tortoise, Z_tortoise = a, b, z.copy()
+    A_hare, B_hare, Z_hare = a, b, z.copy()
 
-    for i in range(1000):  # Smaller iteration limit for small q
-        A, B, Z = update(A, B, Z, g, h, order, r)
-        for _ in range(2):
-            A2, B2, Z2 = update(A2, B2, Z2, g, h, order, r)
-        if Z.to_int() == Z2.to_int():
-            if B == B2:
-                print("Failure: b - b' ≡ 0, retrying")
-                return pollard_rho_mod128(g, h, order, r)
-            x = ((A - A2) * modinv2(B2 - B, order)) % order
-            return x
+    for i in range(max_iterations):
+        # Tortoise: one step
+        A_tortoise, B_tortoise, Z_tortoise = update(A_tortoise, B_tortoise, Z_tortoise, g, h, order, r)
+        
+        # Hare: two steps
+        A_hare, B_hare, Z_hare = update(A_hare, B_hare, Z_hare, g, h, order, r)
+        A_hare, B_hare, Z_hare = update(A_hare, B_hare, Z_hare, g, h, order, r)
+        
+        # Check for collision
+        if Z_tortoise == Z_hare:
+            print(f"Collision found at iteration {i}")
+            
+            return
     raise Exception("No collision found within iteration limit")
 
 # Test with smaller prime
