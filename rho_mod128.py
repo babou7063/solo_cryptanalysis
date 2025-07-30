@@ -118,9 +118,60 @@ class EllipticCurve:
         
         return None
 
-    def solve_discrete_logarithm():
-        #...
-        return 9
+    def solve_discrete_logarithm(self, max_walks: int = 10000):
+        print(f"Starting negating Pollard rho with r={self.r}")
+        print(f"Expected iterations per walk: ~{(3.14159 * self.order / 4) ** 0.5:.0f}")
+        
+        distinguished_points = {}
+        
+        for walk_id in range(max_walks):
+            if walk_id % 100 == 0:
+                print(f"Walk {walk_id}, cycles detected: {self.fruitless_cycles_detected}, escapes: {self.cycle_escapes}")
+            
+            # Perform negative additive walk
+            result = self.negative_additive_walk()
+            if result is None:
+                continue
+            
+            W, a, b, iterations = result
+            
+            # Convert point to a hashable representation
+            point_key = (W.x.to_int(), W.y.to_int())
+            
+            # Check for collision
+            if point_key in distinguished_points:
+                
+                a_prev, b_prev, prev_walk = distinguished_points[point_key]
+                
+                print(f"Collision found between walks {prev_walk} and {walk_id}")
+                print(f"Point: x={W.x.to_int()}, y={W.y.to_int()}")
+                
+                # Solve for discrete logarithm
+                da = (a - a_prev) % self.order
+                db = (b_prev - b) % self.order
+                
+                if db == 0:
+                    print("db = 0, continuing...")
+                    continue
+                
+                try:
+                    db_inv = pow(db, self.order - 2, self.order)  # Assuming order is prime
+                    k = (da * db_inv) % self.order
+                    
+                    print(f"Found discrete logarithm: k = {k}")
+                    print(f"Verification needed: k*P should equal Q")
+                    print(f"Total fruitless cycles detected: {self.fruitless_cycles_detected}")
+                    print(f"Total cycle escapes: {self.cycle_escapes}")
+                    
+                    return k
+                except:
+                    print("Failed to compute modular inverse, continuing...")
+                    continue
+            else:
+                distinguished_points[point_key] = (a, b, walk_id)
+        
+        print("No collision found within walk limit")
+        return None
     
     
 
@@ -128,7 +179,21 @@ class EllipticCurve:
 # TEST
 P = Point( Mod128Minus3Element.from_int(12345), Mod128Minus3Element.from_int(67890))
 Q = Point( Mod128Minus3Element.from_int(54321), Mod128Minus3Element.from_int(98765))
+k_secret = 157
+order = 1009
 
+solver = EllipticCurve(P, Q, order, r=32)
 
-ec = EllipticCurve(P, Q, 10)
-print(ec.precomputed_table)
+print(f"Searching for k such that Q = k*P with order {order}")
+print(f"Expected k = {k_secret}")
+
+found_k = solver.solve_discrete_logarithm(max_walks=1000)
+
+if found_k is not None:
+        print(f"SUCCESS: Found k = {found_k}")
+        if found_k - k_secret % order == 0:
+            print(" Correct discrete logarithm found!")
+        else:
+            print("FAILED: k is not correct modulo order")
+else:
+    print("FAILED: No discrete logarithm found")
