@@ -104,7 +104,50 @@ def pollard_rho(P, Q, order, curve, r=3):
             k = ((A - A2) * modinv(B2 - B, order)) % order
             return k, tortoise_trace, hare_trace, step
 
-
+def animated_visualization(P, Q, order, curve, r=3):
+    """
+    Create an animated step-by-step visualization
+    """
+    try:
+        k_found, tortoise_trace, hare_trace, total_steps = pollard_rho(P, Q, order, curve, r)
+        print(f"Found k = {k_found} in {total_steps} steps")
+        print("Tortoise trace:", tortoise_trace)
+        print("Hare trace:", hare_trace)
+        
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.set_title("Pollard's Rho Algorithm - Animated Visualization")
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y") 
+        ax.grid(True)
+        
+        # Filter valid points
+        valid_tortoise = [(x, y) for x, y in tortoise_trace if x is not None and y is not None]
+        valid_hare = [(x, y) for x, y in hare_trace if x is not None and y is not None]
+        
+        max_steps = min(len(valid_tortoise), len(valid_hare))
+        
+        for step in range(max_steps):
+            if step > 0:
+                # Clear previous step (keep accumulating)
+                pass
+            
+            # Plot tortoise path up to current step
+            if step < len(valid_tortoise):
+                tortoise_x = [valid_tortoise[i][0] for i in range(step + 1)]
+                tortoise_y = [valid_tortoise[i][1] for i in range(step + 1)]
+                ax.plot(tortoise_x, tortoise_y, 'b-', alpha=0.6, linewidth=2, label='Tortoise' if step == 0 else "")
+                ax.scatter(tortoise_x[-1], tortoise_y[-1], color='blue', s=80, zorder=5)
+                
+                # Add arrows for tortoise
+                if len(tortoise_x) > 1:
+                    ax.annotate('', xy=(tortoise_x[-1], tortoise_y[-1]), xytext=(tortoise_x[-2], tortoise_y[-2]), arrowprops=dict(arrowstyle='->', color='blue', lw=2))
+                    
+        plt.show()
+        return k_found
+        
+    except Exception as e:
+        print(f"Algorithm failed: {e}")
+        return None
 
 # Test
 # Courbe : y^2 = x^3 + 2x + 3 mod 97
@@ -125,78 +168,4 @@ print("Order of P:", order)
 k_secret = 7
 Q = curve.scalar_mul(k_secret, P)
 
-"""
-print(f"Trying to find k such that Q = kP")
-print(f"P = {P}")
-print(f"Q = {Q}")
-
-# Exécution de l'algorithme rho
-k_found = pollard_rho(P, Q, order, curve)
-
-print(f"Found k = {k_found}")
-assert k_found == k_secret % order
-"""
-
-
-# Plotting
-print(pollard_rho(P, Q, order, curve))
-
-"""
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.set_title("Visualization of the steps of Pollard’s rho algorithm")
-ax.set_xlabel("X")
-ax.set_ylabel("Y")
-ax.grid(True)
-
-# List of points
-fig.subplots_adjust(left=0.3)
-text_box = fig.add_axes([0.05, 0.1, 0.2, 0.8])
-text_box.axis("off")
-visited_lines = []
-
-# Init
-x_prev, y_prev = trace_points[0]
-ax.scatter(x_prev, y_prev, color='red', s=40)
-visited_lines.append(f"{0}: ({x_prev}, {y_prev})")
-text_box.text(0, 1, "\n".join(visited_lines), fontsize=9, va='top')
-
-# Animation
-for i in range(1, len(trace_points) + 1):
-    x1, y1 = trace_points[i - 1]
-    x2, y2 = trace_points[i % len(trace_points)]
-    
-    if None in (x1, x2, y1, y2):
-        visited_lines.append(f"{i%len(trace_points)}: ({x2}, {y2})")
-        text_box.clear()
-        text_box.axis("off")
-        text_box.text(0, 1, "\n".join(visited_lines[-25:]), fontsize=9, va='top')
-
-    if x1 is None or x2 is None or y1 is None or y2 is None:
-        continue
-
-    # points and lines
-    ax.plot([x1, x2], [y1, y2], 'k-', linewidth=0.5)
-    ax.scatter(x2, y2, color='blue', s=40)
-
-    # list
-    visited_lines.append(f"{i%len(trace_points)}: ({x2}, {y2})")
-    text_box.clear()
-    text_box.axis("off")
-    text_box.text(0, 1, "\n".join(visited_lines[-25:]), fontsize=9, va='top')
-
-    plt.pause(0.5)
-
-pt_last = trace_points[-1]
-pt_first = trace_points[0]
-if None not in pt_last and None not in pt_first:
-    xL, yL = pt_last
-    x0, y0 = pt_first
-    ax.plot([xL, x0], [yL, y0], 'r--', linewidth=0.5)  # ligne de retour en rouge pointillé
-    visited_lines.append(f"↩ retour vers ({x0}, {y0})")
-    text_box.clear()
-    text_box.axis("off")
-    text_box.text(0, 1, "\n".join(visited_lines[-25:]), fontsize=9, va='top')
-    plt.pause(0.5)
-
-plt.show()
-"""
+k_found_animated = animated_visualization(P, Q, order, curve)
