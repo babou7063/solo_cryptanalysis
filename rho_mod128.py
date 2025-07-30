@@ -52,13 +52,34 @@ class EllipticCurve:
         
         return new_W_canonic, new_a, new_b
 
-    def detect_fruitless_cycle():
-        #...
-        return 5
+    def detect_fruitless_cycle(self, history: list):
+        
+        # Not enough history
+        if len(history) < 4:
+            return False
+        
+        # Check for 2-cycle: W_{i-1} == W_{i-3}
+        if len(history) >= 4 and history[-1] == history[-3]:
+            self.fruitless_cycles_detected += 1
+            return True
+        
+        # Check for 4-cycle: W_{i-1} == W_{i-5}
+        if len(history) >= 6 and history[-1] == history[-5]:
+            self.fruitless_cycles_detected += 1
+            return True
+        
+        return False
 
-    def escape_fruitless_cycle():
-        #...
-        return 6
+    def escape_fruitless_cycle(self, history: list):
+        self.cycle_escapes += 1
+        
+        # Find minimum point in recent history
+        recent_points = history[-4:] if len(history) >= 4 else history
+        # Point with the min abs(x)
+        min_point = min(recent_points, key=lambda p: p.x.to_int())
+        
+        # Double the point to get out of the cycle
+        return min_point.double().canonical_form()
 
     def negative_additive_walk():
         #...
