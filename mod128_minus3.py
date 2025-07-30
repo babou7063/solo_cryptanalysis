@@ -232,7 +232,11 @@ class Point:
         # Inverse modular of denom
         p = (2**128 - 3) // 76439
         denom_int = denominator.to_int() % p
-        denom_inv = pow(denom_int, p - 2, p)
+        
+        if denom_int == 0:
+            raise ValueError("Point doubling failed: denominator is zero")
+        
+        denom_inv = pow(denom_int, p - 2, p)       # Not the optimal method
         
         # Compute λ
         lambda_int = (numerator.to_int() * denom_inv) % p
@@ -245,7 +249,12 @@ class Point:
         # y3 = λ(x - x3) - y
         y3 = (lambda_elem * (self.x - x3)) - self.y
         
-        return Point(x3, y3)
+        return Point(x3.reduce(), y3.reduce())
+
+    def add(self, other):
+        return None
+
+
 
 
 ######################################
