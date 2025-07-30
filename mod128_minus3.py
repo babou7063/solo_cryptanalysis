@@ -263,17 +263,32 @@ class Point:
         if self == other:
             return self.double()
         
-        # Denom compute
+        # λ = (y1 - y2)/(x1 - x2)
+        numerator = self.y - other.y
+        denominator = self.x - other.x
         
         # Inverse modular of denom
+        p = (2**128 - 3) // 76439
+        denom_int = denominator.to_int() % p
+        if denom_int == 0:
+            # x1 = x2 => Points are vertical, result is point at infinity
+            print("Point addition resulted in point at infinity")
+            return (None, None)
+        
+        denom_inv = pow(denom_int, p - 2, p)
         
         # Compute λ
+        lambda_int = (numerator.to_int() * denom_inv) % p
+        lambda_elem = Mod128Minus3Element.from_int(lambda_int)
         
         # x3 ​= λ2 − x1 ​ −x2
+        lambda_squared = lambda_elem.square()
+        x3 = lambda_squared - self.x - other.x
         
         # y3​ = λ (x1​ − x3​) − y1​
+        y3 = (lambda_elem * (self.x - x3)) - self.y
         
-        return None
+        return Point(x3.reduce(), y3.reduce())
 
 
 
