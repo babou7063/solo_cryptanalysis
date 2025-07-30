@@ -81,24 +81,28 @@ def pollard_rho(P, Q, order, curve, r=3):
     B2 = b
     R2 = W
     
-    trace = [(R.x, R.y)]
+    # Separate traces for tortoise and hare
+    tortoise_trace = [(R.x, R.y)]
+    hare_trace = [(R2.x, R2.y)]
 
-
+    step = 0
     while True:
+        step += 1
         # Tortoise: 1 step
         R, A, B = update(R, A, B, P, Q, order, r)
-        trace.append((R.x, R.y))
+        tortoise_trace.append((R.x, R.y))
         
         # Hare: 2 steps
         for _ in range(2):
             R2, A2, B2 = update(R2, A2, B2, P, Q, order, r)
+        hare_trace.append((R2.x, R2.y))
 
         # Collision detection
         if R == R2:
             if (B - B2) % order == 0:
                 raise Exception("Failure: b - b' ≡ 0 mod order, try again with different start")
             k = ((A - A2) * modinv(B2 - B, order)) % order
-            return k, trace
+            return k, tortoise_trace, hare_trace, step
 
 
 
@@ -118,7 +122,7 @@ order = curve.find_order(P)  # ordre connu de P (exemple réduit pour test rapid
 print("Order of P:", order)
 
 # Secret à retrouver
-k_secret = 4
+k_secret = 7
 Q = curve.scalar_mul(k_secret, P)
 
 """
@@ -135,8 +139,9 @@ assert k_found == k_secret % order
 
 
 # Plotting
-k_found, trace_points = pollard_rho(P, Q, order, curve)
+print(pollard_rho(P, Q, order, curve))
 
+"""
 fig, ax = plt.subplots(figsize=(10, 6))
 ax.set_title("Visualization of the steps of Pollard’s rho algorithm")
 ax.set_xlabel("X")
@@ -194,3 +199,4 @@ if None not in pt_last and None not in pt_first:
     plt.pause(0.5)
 
 plt.show()
+"""
