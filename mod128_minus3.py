@@ -202,7 +202,7 @@ class Point:
     @classmethod
     def at_infinity(cls):
         return Point(Mod128Minus3Element.zero(), Mod128Minus3Element.zero(), infinity=True)
-
+    
     def __eq__(self, other):
         if self.at_infinity and other.at_infinity:
             return True
