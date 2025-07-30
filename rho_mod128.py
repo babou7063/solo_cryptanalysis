@@ -29,13 +29,28 @@ class EllipticCurve:
         
         return table
 
-    def hash_function(point):
-        #...
-        return 3
+    def hash_function(self, point: Point):
+        
+        # Use y-coordinate as int the paper
+        canonic = point.canonical_form()
+        y_int = canonic.y.to_int()
+        return y_int % self.r
 
-    def additive_walk(W, a, b):
-        #...
-        return 4
+    def additive_walk(self, W: Point, a: int, b: int):
+        canonic_W = W.canonical_form()
+        hash_W = self.hash_function(canonic_W)
+        
+        R_h, c_h, d_h = self.precomputed_table[hash_W]
+        
+        # W_{i+1} = W_i + R_h
+        new_W = canonic_W.add(R_h)
+        new_W_canonic = new_W.canonical_form()
+        
+        # Update coefficients
+        new_a = (a + c_h) % self.order
+        new_b = (b + d_h) % self.order
+        
+        return new_W_canonic, new_a, new_b
 
     def detect_fruitless_cycle():
         #...
@@ -56,3 +71,14 @@ class EllipticCurve:
     def solve_discrete_logarithm():
         #...
         return 9
+    
+    
+
+
+# TEST
+P = Point( Mod128Minus3Element.from_int(12345), Mod128Minus3Element.from_int(67890))
+Q = Point( Mod128Minus3Element.from_int(54321), Mod128Minus3Element.from_int(98765))
+
+
+ec = EllipticCurve(P, Q, 10)
+print(ec.precomputed_table)
