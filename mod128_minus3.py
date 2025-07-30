@@ -194,11 +194,20 @@ class Mod128Minus3Element:
         return result
 
 class Point:
-    def __init__(self, x: Mod128Minus3Element, y: Mod128Minus3Element):
+    def __init__(self, x: Mod128Minus3Element, y: Mod128Minus3Element, infinity=False):
         self.x = x
         self.y = y
+        self.infinity = infinity
     
+    @classmethod
+    def at_infinity(cls):
+        return Point(Mod128Minus3Element.zero(), Mod128Minus3Element.zero(), infinity=True)
+
     def __eq__(self, other):
+        if self.at_infinity and other.at_infinity:
+            return True
+        if self.at_infinity or other.at_infinity:
+            return False
         return self.x == other.x and self.y == other.y
     
     def copy(self):
@@ -227,6 +236,11 @@ class Point:
         :return: a new Point, being the double of self
         :raises ValueError: if the denominator of the double formula is zero
         """
+        # Case of an infinity point
+        if self.at_infinity:
+            return self
+        if self.x == Mod128Minus3Element.from_int(0) and self.y == Mod128Minus3Element.from_int(0):
+            return self.at_infinity()
         
         # Compute numerator of λ
         x_squared = self.x.square()
@@ -259,9 +273,21 @@ class Point:
 
     def add(self, other):
         
+        # If ∞ points
+        if self.at_infinity and other.at_infinity:
+            return Point.at_infinity()
+        if self.at_infinity:
+            return other
+        if other.at_infinity:
+            return self
+        
         # If P = Q
         if self == other:
             return self.double()
+        
+        # If P + (-P)
+        if self.x == other.x and (self.y != other.y or self.y == 0):
+            return Point.at_infinity()
         
         # λ = (y1 - y2)/(x1 - x2)
         numerator = self.y - other.y
