@@ -141,7 +141,31 @@ def animated_visualization(P, Q, order, curve, r=3):
                 # Add arrows for tortoise
                 if len(tortoise_x) > 1:
                     ax.annotate('', xy=(tortoise_x[-1], tortoise_y[-1]), xytext=(tortoise_x[-2], tortoise_y[-2]), arrowprops=dict(arrowstyle='->', color='blue', lw=2))
-                    
+        
+        # Plot hare path up to current step
+            if step < len(valid_hare):
+                hare_x = [valid_hare[i][0] for i in range(step + 1)]
+                hare_y = [valid_hare[i][1] for i in range(step + 1)]
+                ax.plot(hare_x, hare_y, 'r--', alpha=0.6, linewidth=2, label='Hare' if step == 0 else "")
+                ax.scatter(hare_x[-1], hare_y[-1], color='red', s=80, marker='^', zorder=5)
+                
+                # Add arrows for hare
+                if len(hare_x) > 1:
+                    ax.annotate('', xy=(hare_x[-1], hare_y[-1]), xytext=(hare_x[-2], hare_y[-2]), arrowprops=dict(arrowstyle='->', color='red', lw=2))
+
+            if step == 0:
+                ax.legend()
+            
+            ax.set_title(f"Pollard's Rho Algorithm - Step {step + 1}/{max_steps}")
+            plt.pause(0.8)
+        
+        # Highlight collision point
+        if valid_tortoise and valid_hare:
+            collision_x, collision_y = valid_tortoise[-1]
+            ax.scatter(collision_x, collision_y, color='gold', s=200, marker='*', edgecolor='black', linewidth=2, zorder=10, label='Collision!')
+            ax.legend()
+            ax.set_title(f"Collision found! k = {k_found}")
+
         plt.show()
         return k_found
         
