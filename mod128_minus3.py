@@ -218,9 +218,15 @@ class Point:
             return self.negate()
     
     def double(self):
-        
-        # Using affine coordinates: λ = 3(x^2 - 1)/(2y)
-        # x3 = λ^2 - 2x and y3 = λ(x - x3) - y
+        """
+        Double the point using the affine coordinates formula:
+        λ = 3(x^2 - 1)/(2y)
+        x3 = λ^2 - 2x
+        y3 = λ(x - x3) - y
+
+        :return: a new Point, being the double of self
+        :raises ValueError: if the denominator of the double formula is zero
+        """
         
         # Compute numerator of λ
         x_squared = self.x.square()
@@ -252,6 +258,21 @@ class Point:
         return Point(x3.reduce(), y3.reduce())
 
     def add(self, other):
+        
+        # If P = Q
+        if self == other:
+            return self.double()
+        
+        # Denom compute
+        
+        # Inverse modular of denom
+        
+        # Compute λ
+        
+        # x3 ​= λ2 − x1 ​ −x2
+        
+        # y3​ = λ (x1​ − x3​) − y1​
+        
         return None
 
 
