@@ -1,3 +1,9 @@
+# Implementation adapted from:
+# D. J. Bernstein, T. Lange, P. Schwabe, 
+# "On the correct use of the negation map in the Pollard rho method", 2010.
+# https://dl.acm.org/doi/10.5555/1964658.1964669
+#
+# This adaptation is for educational and experimental purposes.
 
 class Mod128Minus3Element:
     """

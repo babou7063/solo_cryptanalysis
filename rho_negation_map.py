@@ -1,3 +1,16 @@
+# Implementation adapted from:
+# D. J. Bernstein, T. Lange, P. Schwabe, 
+# "On the correct use of the negation map in the Pollard rho method", 2010.
+# https://dl.acm.org/doi/10.5555/1964658.1964669
+#
+# This code follows the techniques described in the paper, particularly:
+# - use of the negation map to reduce expected runtime by √2
+# - additive walks with precomputed tables R_j = c_j*P + d_j*Q
+# - detection and escape from fruitless cycles (length 2, 4, etc.)
+# - branchless iteration and use of canonical point forms.
+# 
+# This adaptation is for educational and experimental purposes.
+
 from elliptic_curve import Point, EllipticCurve
 from utils import modinv
 import random
@@ -237,10 +250,30 @@ class NegationMapRho:
         return None
     
     def solve_ecdlp(self, max_walks=1000):
+        """
+        Solve the elliptic curve discrete logarithm problem using the Pollard rho algorithm.
+
+        This method starts at a random point W = aP + bQ on the elliptic curve and iteratively
+        adds a point Rj from a precomputed table to W until it finds a distinguished point.
+        The algorithm then checks for collisions against previously seen distinguished points
+        and if a collision is found, solves for the discrete logarithm.
+
+        :param max_walks: The maximum number of walks to perform before giving up.
+        :return: The discrete logarithm k such that Q = kP, or None if no solution is found
+        """
+        print(f"Starting small-scale Pollard rho with:")
+        print(f"  Curve: y² = x³ + {self.curve.a}x + {self.curve.b} mod {self.curve.p}")
+        print(f"  Order: {self.order}")
+        print(f"  Table size r: {self.r}")
+        print(f"  Expected ~{(3.14159 * self.order / 4) ** 0.5:.0f} iterations per walk")
+        
         distinguished_points = {}
         
         for walk_id in range(max_walks):
             self.walks_performed += 1
+            
+            if walk_id % 50 == 0 and walk_id > 0:
+                print(f"Walk {walk_id}, cycles: {self.fruitless_cycles_detected}, escapes: {self.cycle_escapes}")
             
             # Perform single walk
             result = self.single_walk()
@@ -255,6 +288,10 @@ class NegationMapRho:
             # Check for collision
             if point_key in distinguished_points:
                 a_prev, b_prev, prev_walk = distinguished_points[point_key]
+                
+                print(f"\nCollision found between walks {prev_walk} and {walk_id}!")
+                print(f"Distinguished point: {W}")
+                print(f"Walk lengths: {iterations} iterations")
                 
                 # Solve for discrete logarithm
                 da = (a - a_prev) % self.order
@@ -274,6 +311,9 @@ class NegationMapRho:
                     verification = self.curve.scalar_mul(k, self.P)
                     if verification == self.Q:
                         print("Verification successful!")
+                        print(f"Total walks: {self.walks_performed}")
+                        print(f"Fruitless cycles: {self.fruitless_cycles_detected}")
+                        print(f"Cycle escapes: {self.cycle_escapes}")
                         return k
                     else:
                         print("Verification failed!")

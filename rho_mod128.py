@@ -1,3 +1,18 @@
+# Implementation adapted from:
+# D. J. Bernstein, T. Lange, P. Schwabe, 
+# "On the correct use of the negation map in the Pollard rho method", 2010.
+# https://dl.acm.org/doi/10.5555/1964658.1964669
+#
+# This code implements key ideas from the paper, including:
+# - the use of the negation map to reduce the expected runtime of Pollard rho
+# - additive walks with precomputed tables R_j = c_j·P + d_j·Q
+# - canonical forms of points to avoid duplicates due to symmetry
+# - detection and escape from fruitless cycles
+# - optimized modular arithmetic for 2^128 - 3
+# 
+# This adaptation is for educational and experimental purposes.
+
+
 from mod128_minus3 import Mod128Minus3Element, Point
 import random
 
