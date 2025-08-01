@@ -299,7 +299,7 @@ class Point:
         if denom_int == 0:
             # x1 = x2 => Points are vertical, result is point at infinity
             print("Point addition resulted in point at infinity")
-            return (None, None)
+            return Point.at_infinity()
         
         denom_inv = pow(denom_int, p - 2, p)
         
