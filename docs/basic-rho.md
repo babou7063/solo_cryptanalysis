@@ -38,3 +38,41 @@ The algorithm partitions the elliptic curve group into r regions (default r=3) b
 - **O(1)** - Only stores current state of tortoise and hare
 - Additional O(k) for visualization traces (optional)
 
+
+## Usage Examples
+
+### Basic Usage
+```python
+from elliptic_curve import Point, EllipticCurve
+from basic_rho import pollard_rho
+
+# Define curve y² = x³ + 2x + 3 mod 97
+curve = EllipticCurve(a=2, b=3, p=97)
+P = Point(3, 6, curve)
+order = curve.find_order(P)
+
+# Create discrete logarithm instance
+k_secret = 7
+Q = curve.scalar_mul(k_secret, P)
+
+# Solve using basic rho
+k_found, _, _, steps = pollard_rho(P, Q, order, curve)
+print(f"Found k = {k_found} in {steps} steps")
+```
+
+### With Visualization
+```python
+from basic_rho import animated_visualization
+
+# Run with step-by-step animation
+k_found = animated_visualization(P, Q, order, curve, r=3)
+```
+
+## Visualization Features
+
+The implementation includes an animated visualization that shows:
+- **Tortoise path** (blue line): Single-step progression
+- **Hare path** (red dashed line): Double-step progression  
+- **Collision point** (gold star): Where tortoise and hare meet
+- **Step counter**: Progress through the algorithm
+- **Directional arrows**: Movement direction in each step
