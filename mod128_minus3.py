@@ -228,48 +228,60 @@ class Point:
     
     def double(self):
         """
-        Double the point using the affine coordinates formula:
-        λ = 3(x^2 - 1)/(2y)
-        x3 = λ^2 - 2x
+        Double the point using the affine coordinates formula for y² = x³ + ax + b:
+        For the curve y² = x³ - x (a = -1, b = 0):
+        λ = (3x² - 1)/(2y)
+        x3 = λ² - 2x
         y3 = λ(x - x3) - y
-
+        
         :return: a new Point, being the double of self
         :raises ValueError: if the denominator of the double formula is zero
         """
-        # Case of an infinity point
-        if self.at_infinity:
-            return self
-        if self.x == Mod128Minus3Element.from_int(0) and self.y == Mod128Minus3Element.from_int(0):
-            return self.at_infinity()
+        # Case of point at infinity
+        if self.infinity:
+            return Point.at_infinity()
         
-        # Compute numerator of λ
+        # Check if point is (0, 0) - this would be at infinity for most curves
+        zero = Mod128Minus3Element.from_int(0)
+        if self.x == zero and self.y == zero:
+            return Point.at_infinity()
+        
+        # Check if y = 0 (point is its own inverse, so 2P = O)
+        if self.y == zero:
+            return Point.at_infinity()
+        
+        # Compute slope λ = (3x² - 1)/(2y)
+        # Numerator: 3x² - 1
         x_squared = self.x.square()
-        numerator = (x_squared - Mod128Minus3Element.from_int(1)) * Mod128Minus3Element.from_int(3)
+        three_x_squared = x_squared * Mod128Minus3Element.from_int(3)
+        numerator = three_x_squared - Mod128Minus3Element.from_int(1)
         
-        # Compute denominator of λ
+        # Denominator: 2y
         denominator = self.y * Mod128Minus3Element.from_int(2)
         
-        # Inverse modular of denom
+        # Compute modular inverse of denominator
         p = (2**128 - 3) // 76439
         denom_int = denominator.to_int() % p
         
         if denom_int == 0:
-            raise ValueError("Point doubling failed: denominator is zero")
+            return Point.at_infinity()
         
-        denom_inv = pow(denom_int, p - 2, p)       # Not the optimal method
-        
-        # Compute λ
+        # Compute λ = numerator * denominator^(-1)
+        denom_inv = pow(denom_int, p - 2, p)
         lambda_int = (numerator.to_int() * denom_inv) % p
         lambda_elem = Mod128Minus3Element.from_int(lambda_int)
         
-        # x3 = λ^2 - 2x
+        # x3 = λ² - 2x
         lambda_squared = lambda_elem.square()
-        x3 = lambda_squared - (self.x * Mod128Minus3Element.from_int(2))
+        two_x = self.x * Mod128Minus3Element.from_int(2)
+        x3 = lambda_squared - two_x
         
         # y3 = λ(x - x3) - y
-        y3 = (lambda_elem * (self.x - x3)) - self.y
+        x_diff = self.x - x3
+        y3 = (lambda_elem * x_diff) - self.y
         
         return Point(x3.reduce(), y3.reduce())
+
 
     def add(self, other):
         
@@ -348,3 +360,10 @@ print("a^2 =", sq)
 print("a^2 (int) =", sq.to_int())
 print("(a.to_int() ** 2) % (2**128 - 3) =", pow(a.to_int(), 2, 2**128 - 3))
 """
+
+# Double
+
+P = Point(Mod128Minus3Element.from_int(12345), Mod128Minus3Element.from_int(67890))
+P2 = P.double()
+print(f"P = ({P.x.to_int()}, {P.y.to_int()})")
+print(f"P2 = ({P2.x.to_int()}, {P2.y.to_int()})")

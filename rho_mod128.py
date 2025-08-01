@@ -32,11 +32,11 @@ class EllipticCurve:
     def scalar_mult(self, point: Point, scalar: int) -> Point:
         """double-and-add"""
         if scalar == 0:
-            return Point(Mod128Minus3Element.from_int(0), Mod128Minus3Element.from_int(0))  # Point at infinity
+            result = Point.at_infinity()  # Point at infinity
         if scalar == 1:
             return point.copy()
         
-        result = Point(Mod128Minus3Element.from_int(0), Mod128Minus3Element.from_int(0))  # Point at infinity
+        result = Point.at_infinity()  # Point at infinity
         addend = point.copy()
         
         while scalar > 0:
@@ -249,6 +249,35 @@ def create_test_case():
     return P, Q, k_secret
 
 # TEST
+
+
+
+
+
+# Create a base point P
+P = Point(Mod128Minus3Element.from_int(12345), Mod128Minus3Element.from_int(67890))
+print(f"P = ({P.x.to_int()}, {P.y.to_int()})")
+
+P2 = P.double()
+print(f"P2 = ({P2.x.to_int()}, {P2.y.to_int()})")
+
+P_add = P.add(P)
+print(f"P + P = ({P_add.x.to_int()}, {P_add.y.to_int()})")
+
+if P2 == P_add:
+    print("\n TEST PASSED: P.double() == P.add(P)")
+else:
+    print("\n TEST FAILED: P.double() != P.add(P)")
+
+
+
+
+
+
+
+
+
+"""
 P, Q, k_secret = create_test_case()
 order = 1009
 
@@ -268,3 +297,5 @@ if found_k is not None:
         print(f"Difference: {(found_k - k_secret) % order}")
 else:
     print("FAILED: No discrete logarithm found")
+    
+    """
