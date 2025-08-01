@@ -22,3 +22,24 @@ This project implements several variants of the Pollard's rho algorithm for solv
 - [Windsurf.ai – Generate Docstring](https://windso.rs/) was used to generate initial docstring templates, which were then reviewed and adapted manually.
 - [OpenAI Codex](https://openai.com/blog/openai-codex) was used to generate or assist in the drafting of basic function scaffolding, especially for helper functions and parsing logic.
 
+
+
+
+
+############################################
+# Cryptanalysis Project: Pollard's Rho Algorithms for Elliptic Curve Discrete Logarithm
+
+This project implements several variants of Pollard's rho algorithm for solving the discrete logarithm problem (DLP) on elliptic curves. The implementation includes basic walks, additive walks, and an optimized version over the finite field ℤ/(2^128 - 3)ℤ with negation maps. Given points P and Q on an elliptic curve, where Q = kP for some unknown scalar k, the goal is to efficiently find k.
+
+
+## Core Components
+
+### Elliptic Curve Infrastructure
+- **`elliptic_curve.py`**: Standard elliptic curve operations over finite fields ℤ/pℤ
+- **`mod128_minus3.py`**: Specialized arithmetic for the field ℤ/(2^128 - 3)ℤ with 10-coefficient representation
+
+### Algorithm Implementations
+1. **Basic Rho** (`basic_rho.py`) : Classical Floyd's cycle detection
+2. **Additive Walk** (`additive_walk_rho.py`) : Precomputed table-based walks
+3. **Negation Map Optimization** (`rho_mod128.py`) : Advanced variant with fruitless cycle detection
+
