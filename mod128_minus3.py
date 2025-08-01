@@ -284,47 +284,48 @@ class Point:
 
 
     def add(self, other):
-        
-        # If ∞ points
-        if self.at_infinity and other.at_infinity:
+        """Add two points on the elliptic curve"""
+        # Handle infinity cases
+        if self.infinity and other.infinity:
             return Point.at_infinity()
-        if self.at_infinity:
-            return other
-        if other.at_infinity:
-            return self
+        if self.infinity:
+            return other.copy()
+        if other.infinity:
+            return self.copy()
         
-        # If P = Q
+        # Check if points are equal
         if self == other:
             return self.double()
         
-        # If P + (-P)
-        if self.x == other.x and (self.y != other.y or self.y == 0):
+        # Check if points are inverses (same x, opposite y)
+        if self.x == other.x:
+            if self.y == (Mod128Minus3Element.zero() - other.y):
+                return Point.at_infinity()
+            # If same x but different y (and not opposites), this shouldn't happen on a valid curve
             return Point.at_infinity()
         
-        # λ = (y1 - y2)/(x1 - x2)
-        numerator = self.y - other.y
-        denominator = self.x - other.x
+        # Compute slope λ = (y2 - y1)/(x2 - x1)
+        numerator = other.y - self.y
+        denominator = other.x - self.x
         
-        # Inverse modular of denom
+        # Compute modular inverse
         p = (2**128 - 3) // 76439
         denom_int = denominator.to_int() % p
+        
         if denom_int == 0:
-            # x1 = x2 => Points are vertical, result is point at infinity
-            print("Point addition resulted in point at infinity")
             return Point.at_infinity()
         
         denom_inv = pow(denom_int, p - 2, p)
-        
-        # Compute λ
         lambda_int = (numerator.to_int() * denom_inv) % p
         lambda_elem = Mod128Minus3Element.from_int(lambda_int)
         
-        # x3 ​= λ2 − x1 ​ −x2
+        # x3 = λ² - x1 - x2
         lambda_squared = lambda_elem.square()
         x3 = lambda_squared - self.x - other.x
         
-        # y3​ = λ (x1​ − x3​) − y1​
-        y3 = (lambda_elem * (self.x - x3)) - self.y
+        # y3 = λ(x1 - x3) - y1
+        x_diff = self.x - x3
+        y3 = (lambda_elem * x_diff) - self.y
         
         return Point(x3.reduce(), y3.reduce())
 
@@ -359,11 +360,16 @@ print("a =", a)
 print("a^2 =", sq)
 print("a^2 (int) =", sq.to_int())
 print("(a.to_int() ** 2) % (2**128 - 3) =", pow(a.to_int(), 2, 2**128 - 3))
-"""
 
 # Double
-
 P = Point(Mod128Minus3Element.from_int(12345), Mod128Minus3Element.from_int(67890))
 P2 = P.double()
 print(f"P = ({P.x.to_int()}, {P.y.to_int()})")
 print(f"P2 = ({P2.x.to_int()}, {P2.y.to_int()})")
+
+# Addition
+P = Point(Mod128Minus3Element.from_int(12345), Mod128Minus3Element.from_int(67890))
+P_add = P.add(P)
+print(f"P = ({P.x.to_int()}, {P.y.to_int()})")
+print(f"P + P = ({P_add.x.to_int()}, {P_add.y.to_int()})")
+"""

@@ -253,7 +253,7 @@ def create_test_case():
 
 
 
-
+"""
 # Create a base point P
 P = Point(Mod128Minus3Element.from_int(12345), Mod128Minus3Element.from_int(67890))
 print(f"P = ({P.x.to_int()}, {P.y.to_int()})")
@@ -268,16 +268,8 @@ if P2 == P_add:
     print("\n TEST PASSED: P.double() == P.add(P)")
 else:
     print("\n TEST FAILED: P.double() != P.add(P)")
-
-
-
-
-
-
-
-
-
 """
+
 P, Q, k_secret = create_test_case()
 order = 1009
 
@@ -298,4 +290,3 @@ if found_k is not None:
 else:
     print("FAILED: No discrete logarithm found")
     
-    """
