@@ -47,7 +47,7 @@ class NegationMapRho:
             d_j = random.randint(1, self.order - 1)
             
             # R_j = c_j * P + d_j * Q
-            R_j = self.curve.scalar_mul(d_j, self.P) + self.curve.scalar_mul(d_j, self.Q)
+            R_j = self.curve.scalar_mul(c_j, self.P) + self.curve.scalar_mul(d_j, self.Q)
             
             # Avoid point at infinity in table, if point at infinity just try again with different coefficients
             if not R_j.at_infinity:
@@ -74,10 +74,35 @@ class NegationMapRho:
             return Point(point.x, (-point.y) % self.curve.p, self.curve)
         
     def hash_function(self, point):
-        return 0
+        """
+        Hash function for table lookup.
+        The function takes a point and returns an integer in the range [0, r-1].
+        
+        :param point: The point to hash.
+        :return: An integer hash value.
+        """
+        if point.at_infinity:
+            return 0
+        
+        # Use canonical form and hash y-coordinate
+        canonical = self.canonical_form(point)
+        return canonical.y % self.r
     
     def additive_walk_step(self, W, a, b):
-        return 0
+        canonical_W = self.canonical_form(W)
+        hash_val = self.hash_function(canonical_W)
+        
+        R_h, c_h, d_h = self.precomputed_table[hash_val]
+        
+        # W_{i+1} = W_i + R_h
+        new_W = canonical_W + R_h
+        new_W_canonical = self.canonical_form(new_W)
+        
+        # Update coefficients
+        new_a = (a + c_h) % self.order
+        new_b = (b + d_h) % self.order
+        
+        return new_W_canonical, new_a, new_b
     
     def detect_fruitless_cycle(self, history):
         return 0
