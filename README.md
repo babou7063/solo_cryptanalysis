@@ -1,12 +1,14 @@
-# Cryptanalysis Project
+# Cryptanalysis Project: Pollard's Rho Algorithms for Elliptic Curve Discrete Logarithm
 
-## Sources and Inspirations
+This project implements several variants of Pollard's rho algorithm for solving the discrete logarithm problem (DLP) on elliptic curves. The implementation includes basic walks, additive walks, and an optimized version over the finite field ℤ/(2^128 - 3)ℤ with negation maps. Given points P and Q on an elliptic curve, where Q = kP for some unknown scalar k, the goal is to efficiently find k.
 
-This project implements several variants of the Pollard's rho algorithm for solving the discrete logarithm problem on elliptic curves. It includes basic walks, additive walks, and an optimized version over the field \( \mathbb{Z}/(2^{128} - 3) \mathbb{Z} \).
 
-### Theoretical References
+## Theoretical References
 
+### Primary Research Foundation:
 - D. J. Bernstein, T. Lange, P. Schwabe. "On the correct use of the negation map in the Pollard rho method". 2010. https://dl.acm.org/doi/10.5555/1964658.1964669
+
+### Supporting References:
 - Christophe Petit, "Cryptanalysis", Cours INFO-F514, Université libre de Bruxelles, 2025.
 - Algorithms from classical cryptanalysis: Pollard's rho, additive walk, arithmetic on elliptic curves.
 - [Pollard's rho algorithm for logarithms – Wikipedia](https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm_for_logarithms)
@@ -21,15 +23,6 @@ This project implements several variants of the Pollard's rho algorithm for solv
 
 - [Windsurf.ai – Generate Docstring](https://windso.rs/) was used to generate initial docstring templates, which were then reviewed and adapted manually.
 - [OpenAI Codex](https://openai.com/blog/openai-codex) was used to generate or assist in the drafting of basic function scaffolding, especially for helper functions and parsing logic.
-
-
-
-
-
-############################################
-# Cryptanalysis Project: Pollard's Rho Algorithms for Elliptic Curve Discrete Logarithm
-
-This project implements several variants of Pollard's rho algorithm for solving the discrete logarithm problem (DLP) on elliptic curves. The implementation includes basic walks, additive walks, and an optimized version over the finite field ℤ/(2^128 - 3)ℤ with negation maps. Given points P and Q on an elliptic curve, where Q = kP for some unknown scalar k, the goal is to efficiently find k.
 
 
 ## Core Components
@@ -66,3 +59,10 @@ This project implements several variants of Pollard's rho algorithm for solving 
 Where n is the order of the base point and r is the precomputed table size.
 
 # TODO -> rajouter ma comparaison
+
+## Documentation
+
+Detailed documentation for each algorithm is available in the `docs/` directory:
+- [Basic Pollard's Rho](docs/basic-rho.md)
+- [Additive Walk Variant](docs/additive-walk.md)
+- [Negation Map Optimization](docs/negation-map.md)
