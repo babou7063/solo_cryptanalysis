@@ -133,6 +133,13 @@ class NegationMapRho:
         return P1.x == P2.x and P1.y == P2.y
 
     def detect_fruitless_cycle(self, history):
+        """
+        Detect fruitless cycles in the Pollard's rho algorithm.
+
+        :param history: A list of points visited during the walk.
+        :return: True if a fruitless cycle has been detected, False otherwise.
+        """
+        
         if len(history) < 4:
             return False
         
@@ -152,10 +159,36 @@ class NegationMapRho:
     
     
     def escape_fruitless_cycle(self, history):
-        return 0
+        """
+        Escape from a detected fruitless cycle by doubling the minimum point.
+
+        :param history: A list of points visited during the walk.
+        :return: A point that is the canonical form of the doubled minimum point.
+        """
+
+        self.cycle_escapes += 1
+        
+        # Find minimum point in recent history (by x-coordinate)
+        recent_points = history[-4:] if len(history) >= 4 else history
+        min_point = min(recent_points, key=lambda p: p.x if not p.at_infinity else float('inf'))
+        
+        # Double the point to escape
+        return self.canonical_form(min_point + min_point)
     
     def is_distinguished_point(self, point):
-        return 0
+        """
+        Determine if a given point is a distinguished point in the context of the Pollard's rho algorithm.
+        A point is considered distinguished if it is not at infinity and its
+        x-coordinate has a specific number of trailing zero bits.
+
+        :param point: The point on the elliptic curve to check.
+        :return: True if the point is distinguished, False otherwise.
+        """
+
+        if point.at_infinity:
+            return False
+        # Use trailing zeros in x-coordinate (adjust for difficulty)
+        return (point.x & 0x7) == 0  # 3 trailing zero bits
     
     def single_walk(self, max_iterations=100000):
         return 0
