@@ -33,13 +33,46 @@ class NegationMapRho:
         self.walks_performed = 0
         
     def generate_precomputed_table(self):
-        """Generate precomputed table R_j = c_j * P + d_j * Q"""
+        """
+        Generate precomputed table R_j = c_j * P + d_j * Q.
+        
+        :return: a list of r tuples (Rj, cj, dj)
+        """
         table = []
+        
+        i = 0
+        while i < self.r:
+            # Generate random coefficients
+            c_j = random.randint(1, self.order - 1)
+            d_j = random.randint(1, self.order - 1)
+            
+            # R_j = c_j * P + d_j * Q
+            R_j = self.curve.scalar_mul(d_j, self.P) + self.curve.scalar_mul(d_j, self.Q)
+            
+            # Avoid point at infinity in table, if point at infinity just try again with different coefficients
+            if not R_j.at_infinity:
+                table.append((self.canonical_form(R_j), c_j, d_j))
+                i += 1
         return table
     
     def canonical_form(self, point):
-            return 0
-    
+        """
+        Return the canonical form of a point on the elliptic curve.
+        The function selects between the point and its negation based on the
+        parity of the y-coordinate.
+
+        :param point: The point on the elliptic curve to convert to canonical form.
+        :return: The canonical form of the point.
+        """
+        if point.at_infinity:
+            return point
+        
+        # Choose point with even y-coordinate
+        if point.y % 2 == 0:
+            return point
+        else:
+            return Point(point.x, (-point.y) % self.curve.p, self.curve)
+        
     def hash_function(self, point):
         return 0
     
