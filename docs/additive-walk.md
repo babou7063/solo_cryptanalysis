@@ -32,16 +32,42 @@ The algorithm uses "distinguished points" : special points that satisfy a predet
 ## Complexity Analysis
 
 ### Time Complexity
-- **Expected**: ??? TODO
-- **Theoretical bound**: ??? TODO
+- **Expected**: O(√n) where n is the order of point P
+- **Theoretical bound**: ~√(πn/2) group operations 
 - **Practical performance**: ??? TODO
 
 ### Space Complexity  
-- ??? TODO
-
+- **O(r)** where r is the precomputed table size
+- **Distinguished points storage**: O(d) where d is the number of distinguished points found (typically √n/θ for distinguished point density θ)
 
 ### Distinguished Point Density
 The fraction of distinguished points affects performance:
 - **Too dense** (e.g., 1/4): Short walks, high overhead
 - **Too sparse** (e.g., 1/1024): Long walks, memory issues  
 - **Optimal** (typically 1/16 to 1/64): Balance walk length and collision detection
+
+## Usage Examples
+
+### Basic Example
+```python
+from elliptic_curve import Point, EllipticCurve
+from additive_walk_rho import retry_walks, is_distinguished
+
+# Setup curve and points
+curve = EllipticCurve(a=2, b=3, p=97)
+P = Point(3, 6, curve)
+order = curve.find_order(P)
+
+k_secret = 7
+Q = curve.scalar_mul(k_secret, P)
+
+# Solve using additive walk
+k_found = retry_walks(P, Q, order, curve, r=16, is_distinguished=is_distinguished)
+print(f"Found k = {k_found}")
+```
+
+### Performance Tuning
+- Monitor walk length distribution
+- Measure distinguished point density
+- Profile hash function performance
+- Track collision detection efficiency
