@@ -191,20 +191,127 @@ class NegationMapRho:
         return (point.x & 0x7) == 0  # 3 trailing zero bits
     
     def single_walk(self, max_iterations=100000):
-        return 0
+        """
+        Perform a single walk until hitting a distinguished point.
+        Start at a random point W = aP + bQ
+        Then add a point Rj from a precomputed table to W
+        Stops when it finds a distinguished point
+
+        :param max_iterations: The maximum number of steps to take in the walk.
+        :return: A tuple of the distinguished point, the final coefficients (a, b), and the number of steps taken.
+        """
+        
+        # Random starting coefficients
+        a = random.randint(1, self.order - 1)
+        b = random.randint(1, self.order - 1)
+        
+        # Starting point W = a*P + b*Q
+        W = self.curve.scalar_mul(a, self.P) + self.curve.scalar_mul(b, self.Q)
+        W = self.canonical_form(W)
+        
+        history = [W]
+        cycle_check_freq = max(1, int(2 * (self.r ** 0.5)))  # Check every ~2√r steps
+        
+        for i in range(max_iterations):
+            # Periodically check for fruitless cycles
+            if i % cycle_check_freq == 0 and self.detect_fruitless_cycle(history):
+                W = self.escape_fruitless_cycle(history)
+                # Reset coefficients after escape
+                a = random.randint(1, self.order - 1)
+                b = random.randint(1, self.order - 1)
+                history = [W]
+                continue
+            
+            # Perform additive walk step
+            W, a, b = self.additive_walk_step(W, a, b)
+            history.append(W)
+            
+            # Keep history bounded
+            if len(history) > 10:
+                history.pop(0)
+            
+            # Check for distinguished point
+            if self.is_distinguished_point(W):
+                return W, a, b, i + 1
+        
+        return None
     
     def solve_ecdlp(self, max_walks=1000):
-        return 0
+        distinguished_points = {}
+        
+        for walk_id in range(max_walks):
+            self.walks_performed += 1
+            
+            # Perform single walk
+            result = self.single_walk()
+            if result is None:
+                continue
+            
+            W, a, b, iterations = result
+            
+            # Create hashable key for the point
+            point_key = (W.x, W.y) if not W.at_infinity else ("inf", "inf")
+            
+            # Check for collision
+            if point_key in distinguished_points:
+                a_prev, b_prev, prev_walk = distinguished_points[point_key]
+                
+                # Solve for discrete logarithm
+                da = (a - a_prev) % self.order
+                db = (b_prev - b) % self.order
+                
+                if db == 0:
+                    print("db = 0, continuing...")
+                    continue
+                
+                try:
+                    db_inv = modinv(db, self.order)
+                    k = (da * db_inv) % self.order
+                    
+                    print(f"Found discrete logarithm: k = {k}")
+                    
+                    # Verify the result
+                    verification = self.curve.scalar_mul(k, self.P)
+                    if verification == self.Q:
+                        print("Verification successful!")
+                        return k
+                    else:
+                        print("Verification failed!")
+                        continue
+                        
+                except Exception as e:
+                    print(f"Failed to compute solution: {e}")
+                    continue
+            else:
+                distinguished_points[point_key] = (a, b, walk_id)
+        
+        print("No collision found within walk limit")
+        return None
 
 
 # TEST
 
-# Create an instance of the EllipticCurve class
-ec = EllipticCurve(2, 3, 5)
+def run_simple_tests():
+    from time import time
 
-# Create an instance of the SmallECRho class
-solver = NegationMapRho(ec, Point(1, 2, ec), Point(3, 4, ec), 5)
+    for p, a, b, k, label in [(101, 2, 3, 7, "p=101"), (1009, 2, 3, 123, "p=1009")]:
+        curve = EllipticCurve(a, b, p)
+        P = next(Point(x, y, curve) for x in range(p) for y in range(p)
+                 if (y*y) % p == (x**3 + a*x + b) % p)
+        Q = curve.scalar_mul(k, P)
+        order = curve.find_order(P)
 
-print(solver.points_equal(Point(1, 2, ec), Point(1, 2, ec)))
+        print(f"\n=== Test: {label} ===")
+        print(f"P = {P}, Q = {Q}, k = {k}, order = {order}")
 
-print(solver.additive_walk_step(Point(1, 2, ec), 3, 4))
+        solver = NegationMapRho(curve, P, Q, order, r=32)
+        t0 = time()
+        found_k = solver.solve_ecdlp(max_walks=500)
+        t1 = time()
+
+        if found_k is not None and (found_k - k) % order == 0:
+            print(f"Found k = {found_k} in {t1 - t0:.2f}s")
+        else:
+            print(f"Failed (k = {found_k}) in {t1 - t0:.2f}s")
+
+run_simple_tests()
