@@ -50,8 +50,8 @@ The fraction of distinguished points affects performance:
 
 ### Basic Example
 ```python
-from elliptic_curve import Point, EllipticCurve
-from additive_walk_rho import retry_walks, is_distinguished
+from elliptic_curve import *
+from additive_walk_rho import *
 
 # Setup curve and points
 curve = EllipticCurve(a=2, b=3, p=97)

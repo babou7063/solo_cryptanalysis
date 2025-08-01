@@ -43,8 +43,8 @@ The algorithm partitions the elliptic curve group into r regions (default r=3) b
 
 ### Basic Usage
 ```python
-from elliptic_curve import Point, EllipticCurve
-from basic_rho import pollard_rho
+from elliptic_curve import *
+from basic_rho import *
 
 # Define curve y² = x³ + 2x + 3 mod 97
 curve = EllipticCurve(a=2, b=3, p=97)
@@ -62,7 +62,7 @@ print(f"Found k = {k_found} in {steps} steps")
 
 ### With Visualization
 ```python
-from basic_rho import animated_visualization
+from basic_rho import *
 
 # Run with step-by-step animation
 k_found = animated_visualization(P, Q, order, curve, r=3)
