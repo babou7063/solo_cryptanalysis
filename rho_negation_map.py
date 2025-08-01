@@ -89,6 +89,19 @@ class NegationMapRho:
         return canonical.y % self.r
     
     def additive_walk_step(self, W, a, b):
+        """
+        Perform a single step of the additive walk in the Pollard's rho algorithm.
+        This function updates the current point W on the elliptic curve and its
+        associated coefficients (a, b) using a precomputed table of random linear
+        combinations.
+
+        :param W: The current point on the elliptic curve.
+        :param a: The current coefficient of the base point P.
+        :param b: The current coefficient of the target point Q.
+        :return: A tuple containing the new canonical point on the curve and the
+                updated coefficients (new_W_canonical, new_a, new_b).
+        """
+
         canonical_W = self.canonical_form(W)
         hash_val = self.hash_function(canonical_W)
         
@@ -104,8 +117,38 @@ class NegationMapRho:
         
         return new_W_canonical, new_a, new_b
     
+    def points_equal(self, P1, P2):
+        """
+        Check if two points on an elliptic curve are equal.
+
+        :param P1: First point on the elliptic curve.
+        :param P2: Second point on the elliptic curve.
+        :return: True if the points are equal, False otherwise.
+        """
+
+        if P1.at_infinity and P2.at_infinity:
+            return True
+        if P1.at_infinity or P2.at_infinity:
+            return False
+        return P1.x == P2.x and P1.y == P2.y
+
     def detect_fruitless_cycle(self, history):
-        return 0
+        if len(history) < 4:
+            return False
+        
+        # Check for 2-cycle: W_{i-1} == W_{i-3}
+        if len(history) >= 4:
+            if self.points_equal(history[-1], history[-3]):
+                self.fruitless_cycles_detected += 1
+                return True
+        
+        # Check for 4-cycle: W_{i-1} == W_{i-5}
+        if len(history) >= 6:
+            if self.points_equal(history[-1], history[-5]):
+                self.fruitless_cycles_detected += 1
+                return True
+        
+        return False
     
     
     def escape_fruitless_cycle(self, history):
@@ -120,3 +163,15 @@ class NegationMapRho:
     def solve_ecdlp(self, max_walks=1000):
         return 0
 
+
+# TEST
+
+# Create an instance of the EllipticCurve class
+ec = EllipticCurve(2, 3, 5)
+
+# Create an instance of the SmallECRho class
+solver = NegationMapRho(ec, Point(1, 2, ec), Point(3, 4, ec), 5)
+
+print(solver.points_equal(Point(1, 2, ec), Point(1, 2, ec)))
+
+print(solver.additive_walk_step(Point(1, 2, ec), 3, 4))
