@@ -170,9 +170,10 @@ def animated_visualization(P, Q, order, curve, r=3):
         return k_found
         
     except Exception as e:
-        print(f"Algorithm failed: {e}")
+        #print(f"Algorithm failed: {e}")
         return None
 
+"""
 # Test
 # Courbe : y^2 = x^3 + 2x + 3 mod 97
 p = 97
@@ -193,3 +194,5 @@ k_secret = 7
 Q = curve.scalar_mul(k_secret, P)
 
 #k_found_animated = animated_visualization(P, Q, order, curve)
+
+"""

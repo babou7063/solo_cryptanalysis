@@ -38,7 +38,7 @@ def precompute_table(P, Q, r, order, curve):
             cj = random.randint(0, order - 1)
             dj = random.randint(0, order - 1)
             if cj == 0 and dj == 0:
-                continue  # Ne rien ajouter
+                continue
             Rj = curve.scalar_mul(cj, P) + curve.scalar_mul(dj, Q)
             if not Rj.at_infinity:
                 break
@@ -165,39 +165,40 @@ def retry_walks(P, Q, order, curve, r, is_distinguished, max_attempts=10):
                 continue  # same seed ⇒ unuseful
 
             if W1 == W2:
-                print("Collision detected!")
+                #print("Collision detected!")
                 a1, b1 = replay_walk(seed1, R_table, P, Q, order, curve, W1, r)
                 a2, b2 = replay_walk(seed2, R_table, P, Q, order, curve, W2, r)
 
                 if (b2 - b1) % order == 0:
-                    print("Failure: division by 0")
+                    #print("Failure: division by 0")
                     continue
                 k = ((a1 - a2) * modinv(b2 - b1, order)) % order
                 return k
         except Exception as e:
             print(f"Attempt {attempt + 1} failed: {e}")
     
-    print("All attempts failed.")
+    #print("All attempts failed.")
     return None
 
 
 ##########################################
 #                  Test                  #
 ##########################################
-
-p = 97
+"""
+p = 211
 a = 2
 b = 3
 curve = EllipticCurve(a, b, p)
 
-P = Point(3, 6, curve)
+P = Point(1, 39, curve)
 order = curve.find_order(P)
 print(f"Order of P: {order}")
 
-k_secret = 2
+k_secret = 7
 Q = curve.scalar_mul(k_secret, P)
 
 k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished)
 print(f"Recovered k = {k_found}")
 
 
+"""

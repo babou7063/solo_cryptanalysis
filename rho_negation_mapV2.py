@@ -261,19 +261,19 @@ class NegationMapRho:
         :param max_walks: The maximum number of walks to perform before giving up.
         :return: The discrete logarithm k such that Q = kP, or None if no solution is found
         """
-        print(f"Starting small-scale Pollard rho with:")
-        print(f"  Curve: y² = x³ + {self.curve.a}x + {self.curve.b} mod {self.curve.p}")
-        print(f"  Order: {self.order}")
-        print(f"  Table size r: {self.r}")
-        print(f"  Expected ~{(3.14159 * self.order / 4) ** 0.5:.0f} iterations per walk")
+        #print(f"Starting small-scale Pollard rho with:")
+        #print(f"  Curve: y² = x³ + {self.curve.a}x + {self.curve.b} mod {self.curve.p}")
+        #print(f"  Order: {self.order}")
+        #print(f"  Table size r: {self.r}")
+        #print(f"  Expected ~{(3.14159 * self.order / 4) ** 0.5:.0f} iterations per walk")
         
         distinguished_points = {}
         
         for walk_id in range(max_walks):
             self.walks_performed += 1
             
-            if walk_id % 50 == 0 and walk_id > 0:
-                print(f"Walk {walk_id}, cycles: {self.fruitless_cycles_detected}, escapes: {self.cycle_escapes}")
+            #if walk_id % 50 == 0 and walk_id > 0:
+                #print(f"Walk {walk_id}, cycles: {self.fruitless_cycles_detected}, escapes: {self.cycle_escapes}")
             
             # Perform single walk
             result = self.single_walk()
@@ -289,43 +289,43 @@ class NegationMapRho:
             if point_key in distinguished_points:
                 a_prev, b_prev, prev_walk = distinguished_points[point_key]
                 
-                print(f"\nCollision found between walks {prev_walk} and {walk_id}!")
-                print(f"Distinguished point: {W}")
-                print(f"Walk lengths: {iterations} iterations")
+                #print(f"\nCollision found between walks {prev_walk} and {walk_id}!")
+                #print(f"Distinguished point: {W}")
+                #print(f"Walk lengths: {iterations} iterations")
                 
                 # Solve for discrete logarithm
                 da = (a - a_prev) % self.order
                 db = (b_prev - b) % self.order
                 
                 if db == 0:
-                    print("db = 0, continuing...")
+                    #print("db = 0, continuing...")
                     continue
                 
                 try:
                     db_inv = modinv(db, self.order)
                     k = (da * db_inv) % self.order
                     
-                    print(f"Found discrete logarithm: k = {k}")
+                    #print(f"Found discrete logarithm: k = {k}")
                     
                     # Verify the result
                     verification = self.curve.scalar_mul(k, self.P)
                     if verification == self.Q:
-                        print("Verification successful!")
-                        print(f"Total walks: {self.walks_performed}")
-                        print(f"Fruitless cycles: {self.fruitless_cycles_detected}")
-                        print(f"Cycle escapes: {self.cycle_escapes}")
+                        #print("Verification successful!")
+                        #print(f"Total walks: {self.walks_performed}")
+                        #print(f"Fruitless cycles: {self.fruitless_cycles_detected}")
+                        #print(f"Cycle escapes: {self.cycle_escapes}")
                         return k
                     else:
-                        print("Verification failed!")
+                        #print("Verification failed!")
                         continue
                         
                 except Exception as e:
-                    print(f"Failed to compute solution: {e}")
+                    #print(f"Failed to compute solution: {e}")
                     continue
             else:
                 distinguished_points[point_key] = (a, b, walk_id)
         
-        print("No collision found within walk limit")
+        #print("No collision found within walk limit")
         return None
 
 
@@ -354,4 +354,4 @@ def run_simple_tests():
         else:
             print(f"Failed (k = {found_k}) in {t1 - t0:.2f}s")
 
-run_simple_tests()
+#run_simple_tests()
