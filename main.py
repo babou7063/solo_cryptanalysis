@@ -126,7 +126,52 @@ def run_time_complexity_analysis():
     
     return results
 
+def print_summary(results):
+    """Print a summary of the results."""
+    print("=== SUMMARY ===")
+    print(f"Test cases: {len(results['primes'])}")
+    print(f"Primes tested: {results['primes']}")
+    
+    print("\nSuccess rates:")
+    basic_success_rate = sum(results['basic_rho_success']) / len(results['basic_rho_success']) * 100
+    additive_success_rate = sum(results['additive_walk_success']) / len(results['additive_walk_success']) * 100
+    negation_success_rate = sum(results['negation_map_success']) / len(results['negation_map_success']) * 100
+    
+    print(f"  Basic Rho: {basic_success_rate:.1f}%")
+    print(f"  Additive Walk: {additive_success_rate:.1f}%")
+    print(f"  Negation Map: {negation_success_rate:.1f}%")
+    
+    # Calculate average times for all runs (successful and failed)
+    def avg_time(times):
+        valid_times = [t for t in times if t is not None]
+        return np.mean(valid_times) if valid_times else None
+    
+    # Calculate average times for successful runs only
+    def avg_successful_time(times, successes):
+        successful_times = [t for t, s in zip(times, successes) if t is not None and s]
+        return np.mean(successful_times) if successful_times else None
+    
+    basic_avg_all = avg_time(results['basic_rho_times'])
+    additive_avg_all = avg_time(results['additive_walk_times'])
+    negation_avg_all = avg_time(results['negation_map_times'])
+    
+    basic_avg = avg_successful_time(results['basic_rho_times'], results['basic_rho_success'])
+    additive_avg = avg_successful_time(results['additive_walk_times'], results['additive_walk_success'])
+    negation_avg = avg_successful_time(results['negation_map_times'], results['negation_map_success'])
+    
+    print("\nAverage execution time (all runs):")
+    if basic_avg_all: print(f"  Basic Rho: {basic_avg_all:.4f}s")
+    if additive_avg_all: print(f"  Additive Walk: {additive_avg_all:.4f}s") 
+    if negation_avg_all: print(f"  Negation Map: {negation_avg_all:.4f}s")
+    
+    print("\nAverage execution time (successful runs only):")
+    if basic_avg: print(f"  Basic Rho: {basic_avg:.4f}s")
+    if additive_avg: print(f"  Additive Walk: {additive_avg:.4f}s") 
+    if negation_avg: print(f"  Negation Map: {negation_avg:.4f}s")
+
+
 if __name__ == "__main__":
     
     results = run_time_complexity_analysis()
-    print(results)
+    
+    print_summary(results)
