@@ -36,13 +36,18 @@ This project implements several variants of Pollard's rho algorithm for solving 
 2. **Additive Walk** (`additive_walk_rho.py`) : Precomputed table-based walks
 3. **Negation Map Optimization** (`rho_mod128.py`) : Advanced variant with fruitless cycle detection
 
+### Documentation
+Detailed documentation for each algorithm is available in the `docs/` directory:
+- [Basic Pollard's Rho](docs/basic-rho.md)
+- [Additive Walk Variant](docs/additive-walk.md)
+- [Negation Map Optimization](docs/negation-map.md)
 
 ### Prerequisites
 - Python 3.8+
 - matplotlib (for visualizations)
 - Standard library modules: random, hashlib, time
 
-### Basic Usage
+### Launch test
 
 ```python
 ...
@@ -59,10 +64,3 @@ This project implements several variants of Pollard's rho algorithm for solving 
 Where n is the order of the base point and r is the precomputed table size.
 
 # TODO -> rajouter ma comparaison
-
-## Documentation
-
-Detailed documentation for each algorithm is available in the `docs/` directory:
-- [Basic Pollard's Rho](docs/basic-rho.md)
-- [Additive Walk Variant](docs/additive-walk.md)
-- [Negation Map Optimization](docs/negation-map.md)
