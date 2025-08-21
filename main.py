@@ -2,6 +2,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import math
 from elliptic_curve import Point, EllipticCurve
 from basic_rho import pollard_rho
 from additive_walk_rho import retry_walks, is_distinguished
@@ -31,6 +32,14 @@ def find_point_with_min_order(curve, min_order=None, max_try=5_000):
                     raise ValueError("Impossible to find a point with sufficient order.")
     raise ValueError("No valid point found on the curve.")
 
+def largest_prime_factor(n: int) -> int:
+    f, lp = 2, 1
+    while f * f <= n:
+        while n % f == 0:
+            lp, n = f, n // f
+        f = 3 if f == 2 else f + 2
+    return n if n > 1 else lp
+
 def robust_basic_rho(P, Q, order, curve, r=3, retries=8):
     """
     A robust version of the basic Pollard's rho algorithm that
@@ -48,6 +57,12 @@ def robust_basic_rho(P, Q, order, curve, r=3, retries=8):
             continue
     return None, None, False, {'adds':0,'dbls':0,'total':0}
 
+def make_is_distinguished(n, min_bits=3):
+    t_bits = max(min_bits, int(round(math.log2(max(2, int(math.sqrt(n) // 8))))))
+    mask = (1 << t_bits) - 1
+    def _pred(W):
+        return (not W.at_infinity) and ((W.x & mask) == 0)
+    return _pred
 
 def run_time_complexity_analysis():
     """Run time complexity analysis for all three algorithms."""
@@ -63,6 +78,7 @@ def run_time_complexity_analysis():
     
     results = {
         'primes': [],
+        'orders': [],
         'basic_rho_times': [],
         'additive_walk_times': [],
         'negation_map_times': [],
@@ -83,10 +99,15 @@ def run_time_complexity_analysis():
         curve = EllipticCurve(a, b, p)
 
         P, order = find_point_with_min_order(curve)
+        ell = largest_prime_factor(order)
+        h = order // ell
+        P = curve.scalar_mul(h, P)
+        order = ell
         k_secret = random.randrange(1, order)
         Q = curve.scalar_mul(k_secret, P)
 
         results['primes'].append(p)
+        results['orders'].append(order)
         print(f"[p={p}] ordre(P)={order}, k_secret={k_secret}")
 
         # --- Basic Rho (robuste)
@@ -110,7 +131,8 @@ def run_time_complexity_analysis():
         print("  Testing Additive Walk Rho...")
         t0 = time.time()
         try:
-            k_found, stats = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished, max_attempts=6, return_stats=True)
+            dp_pred = make_is_distinguished(order)
+            k_found, stats = retry_walks(P, Q, order, curve, r=8, is_distinguished=dp_pred, max_attempts=6, return_stats=True)
             additive_success = (k_found is not None and ((k_found - k_secret) % order == 0))
             if additive_success:
                 results['additive_ops'].append(stats['ops_total'])
@@ -320,8 +342,8 @@ def plot_ops(results):
     ax1.set_title('Group ops per success'); ax1.set_yscale('log'); ax1.grid(True, alpha=.3); ax1.legend()
 
     # Théorie ~ c·√p (échelle ops)
-    theor = [np.sqrt(p) for p in primes]
-    ax2.plot(primes, theor, 'k--', label='~√p (proxy)')
+    theor = [np.sqrt(n) for n in results['orders']]
+    ax2.plot(results['orders'], theor, 'k--', label='~√n (proxy)')
     if b_ops: ax2.plot(b_x, b_ops, 'bo-', label='Basic Rho (ops)')
     if a_ops: ax2.plot(a_x, a_ops, 'rs-', label='Additive Walk (ops)')
     if n_ops: ax2.plot(n_x, n_ops, 'g^-', label='Negation Map (ops)')
