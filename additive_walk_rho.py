@@ -149,6 +149,35 @@ def replay_walk(seed, R_table, P, Q, order, curve, target_point, r, max_steps=10
 
     raise Exception("Replay walk exceeded max_steps - possible desynchronization")
 
+def solve_for_k(num, den, n, P, Q, curve):
+    
+    """
+    Solve for k in the equation num*k = den (mod n), where n is the order of P.
+    If there is no solution, return None.
+
+    :param num: The left-hand side of the equation
+    :param den: The right-hand side of the equation
+    :param n: The order of P
+    :param P: The point on the elliptic curve
+    :param Q: The point on the elliptic curve
+    :param curve: The elliptic curve
+    :return: The solution k if it exists, None otherwise
+    """
+    d = math.gcd(den, n)
+    if num % d != 0:
+        return None
+    n1, den1, num1 = n // d, den // d, num // d
+    try:
+        # Compute the modular inverse of den1 modulo n1
+        inv = pow(den1, -1, n1) 
+    except ValueError:
+        return None
+    k0 = (num1 * inv) % n1
+    for t in range(d):
+        k = (k0 + t * n1) % n
+        if curve.scalar_mul(k, P) == Q:
+            return k
+    return None
 
 def retry_walks(P, Q, order, curve, r, is_distinguished, max_attempts=10, walks_per_attempt=64, max_steps=10_000):
     """
@@ -190,7 +219,11 @@ def retry_walks(P, Q, order, curve, r, is_distinguished, max_attempts=10, walks_
                     continue
 
                 try:
-                    k = ((a1 - a2) * modinv(den, order)) % order
+                    num = (a1 - a2) % order
+                    den = (b2 - b1) % order
+                    k = solve_for_k(num, den, order, P, Q, curve)
+                    if k is not None:
+                        return k
                 except Exception:
                     continue
 
@@ -218,6 +251,6 @@ print(f"Order of P: {order}")
 k_secret = 7
 Q = curve.scalar_mul(k_secret, P)
 
-k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished)
+k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished, max_attempts=10, walks_per_attempt=64, max_steps=10_000)
 print(f"Recovered k = {k_found}")
 
