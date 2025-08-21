@@ -1,19 +1,33 @@
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 from elliptic_curve import Point, EllipticCurve
 from basic_rho import pollard_rho
 from additive_walk_rho import retry_walks, is_distinguished
 from rho_negation_mapV2 import NegationMapRho
 
-def find_curve_point(curve, start_x=1):
-    """Find a valid point on the elliptic curve."""
-    for x in range(start_x, curve.p):
-        y_squared = (x**3 + curve.a * x + curve.b) % curve.p
+def find_point_with_min_order(curve, min_order=None, max_try=5_000):
+    
+    if min_order is None:
+        min_order = max(50, int(curve.p ** 0.5))
+
+    tries = 0
+    for x in range(curve.p):
+        y2 = (x**3 + curve.a * x + curve.b) % curve.p
         for y in range(curve.p):
-            if (y * y) % curve.p == y_squared:
-                return Point(x, y, curve)
-    raise ValueError("No valid point found")
+            if (y * y) % curve.p == y2:
+                P = Point(x, y, curve)
+                try:
+                    order = curve.find_order(P, max_iter=10_000)
+                except Exception:
+                    continue
+                if order >= min_order:
+                    return P, order
+                tries += 1
+                if tries >= max_try:
+                    raise ValueError("Impossible to find a point with sufficient order.")
+    raise ValueError("No valid point found on the curve.")
 
 def run_time_complexity_analysis():
     """Run time complexity analysis for all three algorithms."""
