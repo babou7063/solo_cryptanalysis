@@ -283,7 +283,7 @@ if P2 == P_add:
     print("\n TEST PASSED: P.double() == P.add(P)")
 else:
     print("\n TEST FAILED: P.double() != P.add(P)")
-"""
+
 
 P, Q, k_secret = create_test_case()
 order = 1009
@@ -304,4 +304,6 @@ if found_k is not None:
         print(f"Difference: {(found_k - k_secret) % order}")
 else:
     print("FAILED: No discrete logarithm found")
+
     
+    """

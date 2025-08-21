@@ -266,7 +266,7 @@ class Point:
         denominator = self.y * Mod128Minus3Element.from_int(2)
         
         # Compute modular inverse of denominator
-        p = (2**128 - 3) // 76439
+        p = (2**128 - 3)
         denom_int = denominator.to_int() % p
         
         if denom_int == 0:
@@ -315,7 +315,7 @@ class Point:
         denominator = other.x - self.x
         
         # Compute modular inverse
-        p = (2**128 - 3) // 76439
+        p = (2**128 - 3)
         denom_int = denominator.to_int() % p
         
         if denom_int == 0:

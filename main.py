@@ -75,7 +75,7 @@ def run_time_complexity_analysis():
         except Exception as e:
             end_time = time.time()
             basic_time = end_time - start_time
-            print(f"    Failed: {e} (Time: {basic_time:.4f}s)")
+            #print(f"    Failed: {e} (Time: {basic_time:.4f}s)")
             results['basic_rho_times'].append(basic_time)
             results['basic_rho_success'].append(False)
         
