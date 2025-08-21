@@ -2,6 +2,7 @@ from elliptic_curve import Point, EllipticCurve
 from utils import modinv
 import random
 import hashlib
+import math
 
 def is_distinguished(W):
     """
@@ -68,7 +69,7 @@ def h(point, r):
     return digest[0] % r
 
 
-def additive_walk(P, Q, order, curve, r=16, max_steps=10_000, is_distinguished=None):
+def additive_walk(P, Q, order, curve, r=16, max_steps=10_000, is_distinguished=None, R_table=None):
     """
     Run the additive walk rho algorithm to find a collision between a "distinguished"
     point and a random walk on the elliptic curve.
@@ -94,9 +95,10 @@ def additive_walk(P, Q, order, curve, r=16, max_steps=10_000, is_distinguished=N
         the walk, and the precomputed table of points
     """
     if is_distinguished is None:
-        is_distinguished = lambda W: W.x % 32 == 0  # Ex: x ≡ 0 mod 32
+        is_distinguished = lambda W: (not W.at_infinity) and (W.x % 32 == 0)
 
-    R_table = precompute_table(P, Q, r, order, curve)
+    if R_table is None:
+        R_table = precompute_table(P, Q, r, order, curve)
 
     # Random seed: a, b
     a0 = random.randint(1, order - 1)
@@ -110,7 +112,8 @@ def additive_walk(P, Q, order, curve, r=16, max_steps=10_000, is_distinguished=N
             return W, seed, R_table
 
         j = h(W, r)
-        W = W + R_table[j][0]
+        Rj, cj, dj = R_table[j]
+        W = W + Rj
 
     raise Exception("No distinguished point found")
 
@@ -147,7 +150,7 @@ def replay_walk(seed, R_table, P, Q, order, curve, target_point, r, max_steps=10
     raise Exception("Replay walk exceeded max_steps - possible desynchronization")
 
 
-def retry_walks(P, Q, order, curve, r, is_distinguished, max_attempts=10):
+def retry_walks(P, Q, order, curve, r, is_distinguished, max_attempts=10, walks_per_attempt=64, max_steps=10_000):
     """
     Attempt to recover the scalar k such that Q = kP using the additive walk rho algorithm.
 
@@ -160,36 +163,49 @@ def retry_walks(P, Q, order, curve, r, is_distinguished, max_attempts=10):
     :param max_attempts: maximum number of attempts to find a collision (default: 10)
     :return: the recovered scalar k, or None if all attempts fail
     """
-
     for attempt in range(max_attempts):
-        try:
-            W1, seed1, R_table = additive_walk(P, Q, order, curve, r=r, is_distinguished=is_distinguished)
-            W2, seed2, _ = additive_walk(P, Q, order, curve, r=r, is_distinguished=is_distinguished)
+        R_table = precompute_table(P, Q, r, order, curve)
+        seen = {}  # dict: key=(x,y) -> seed
 
-            if W1 == W2 and seed1 == seed2:
-                continue  # same seed ⇒ unuseful
+        for _ in range(walks_per_attempt):
+            try:
+                W, seed, _ = additive_walk(P, Q, order, curve, r=r, max_steps=max_steps, is_distinguished=is_distinguished, R_table=R_table)
+            except Exception:
+                continue
 
-            if W1 == W2:
-                #print("Collision detected!")
-                a1, b1 = replay_walk(seed1, R_table, P, Q, order, curve, W1, r)
-                a2, b2 = replay_walk(seed2, R_table, P, Q, order, curve, W2, r)
+            key = (W.x, W.y) if not W.at_infinity else ('INF', 'INF')
 
-                if (b2 - b1) % order == 0:
-                    #print("Failure: division by 0")
+            if key in seen:
+                seed1 = seen[key]
+                seed2 = seed
+
+                try:
+                    a1, b1 = replay_walk(seed1, R_table, P, Q, order, curve, W, r, max_steps=max_steps)
+                    a2, b2 = replay_walk(seed2, R_table, P, Q, order, curve, W, r, max_steps=max_steps)
+                except Exception:
                     continue
-                k = ((a1 - a2) * modinv(b2 - b1, order)) % order
-                return k
-        except Exception as e:
-            print(f"Attempt {attempt + 1} failed: {e}")
-    
-    #print("All attempts failed.")
+
+                den = (b2 - b1) % order
+                if den == 0:
+                    continue
+
+                try:
+                    k = ((a1 - a2) * modinv(den, order)) % order
+                except Exception:
+                    continue
+
+                if curve.scalar_mul(k, P) == Q:
+                    return k
+
+            else:
+                seen[key] = seed
+
     return None
 
 
 ##########################################
 #                  Test                  #
 ##########################################
-"""
 p = 211
 a = 2
 b = 3
@@ -205,5 +221,3 @@ Q = curve.scalar_mul(k_secret, P)
 k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished)
 print(f"Recovered k = {k_found}")
 
-
-"""
