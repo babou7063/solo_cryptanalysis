@@ -48,18 +48,23 @@ def precompute_table(P, Q, r, order, curve):
 
 def h(point, r):
     """
-    Hash function used in the additive walk rho algorithm.
-    The hash value is computed by taking the first byte of the SHA-256
-    hash of the x-coordinate of P, and taking its value modulo r.
+    Compute a hash value for a given point on the elliptic curve.
+    This function first converts the x and y coordinates of the point to bytes
+    and then computes the SHA-256 hash of those bytes. The first byte of the
+    resulting hash is then returned modulo r.
 
-    :param point: a point on an elliptic curve
-    :param r: a positive integer
-    :return: an integer in the range [0, r-1]
+    :param point: The point on the elliptic curve to hash
+    :param r: The modulus to reduce the hash value to
+    :return: The hash value of the point modulo r
     """
     if point.at_infinity:
         return 0
-    x_bytes = str(point.x).encode()
-    digest = hashlib.sha256(x_bytes).digest()
+    x = point.x
+    y = point.y
+    xb = x.to_bytes((x.bit_length() + 7)//8 or 1, 'big')
+    yb = y.to_bytes((y.bit_length() + 7)//8 or 1, 'big')
+    digest = hashlib.sha256(b'X'+xb+b'Y'+yb).digest()
+    
     return digest[0] % r
 
 
