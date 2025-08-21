@@ -66,7 +66,7 @@ def pollard_rho(P, Q, order, curve, r=3):
     :param r: the number of partitions in the walk (default: 3)
     :return: the scalar k such that Q = kP
     """
-    
+    curve.reset_op_counters()
     a = random.randint(1, order - 1)
     b = random.randint(1, order - 1)
     W = curve.scalar_mul(a, P) + curve.scalar_mul(b, Q)
@@ -102,7 +102,8 @@ def pollard_rho(P, Q, order, curve, r=3):
             if (B - B2) % order == 0:
                 raise Exception("Failure: b - b' ≡ 0 mod order, try again with different start")
             k = ((A - A2) * modinv(B2 - B, order)) % order
-            return k, tortoise_trace, hare_trace, step
+            ops = curve.get_op_counters()
+            return k, tortoise_trace, hare_trace, step, ops
 
 def animated_visualization(P, Q, order, curve, r=3):
     """

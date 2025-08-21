@@ -75,7 +75,16 @@ class EllipticCurve:
         """
 
         self.a, self.b, self.p = a, b, p
+        self.op_adds = 0
+        self.op_dbls = 0
     
+    def reset_op_counters(self):
+        self.op_adds = 0
+        self.op_dbls = 0
+
+    def get_op_counters(self):
+        return {"adds": self.op_adds, "dbls": self.op_dbls, "total": self.op_adds + self.op_dbls}
+
     def add_points(self, P, Q):
         """Addition of two points on the elliptic curve.
 
@@ -97,10 +106,11 @@ class EllipticCurve:
             return Point.infinity(self)
 
         if P == Q:
+            self.op_dbls += 1
             num = (3 * P.x * P.x + self.a) % self.p   # numerator
             den = pow(2 * P.y, -1, self.p)            # modulus inverse of denominator
         else:
-            # Classic addition
+            self.op_adds += 1
             num = (Q.y - P.y) % self.p                # numerator
             den = pow(Q.x - P.x, -1, self.p)          # modulus inverse of denominator
 
