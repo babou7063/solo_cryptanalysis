@@ -8,7 +8,9 @@ from additive_walk_rho import retry_walks, is_distinguished
 from rho_negation_mapV2 import NegationMapRho
 
 def find_point_with_min_order(curve, min_order=None, max_try=5_000):
-    
+    """
+    Find a point on the elliptic curve with an order greater or equal to a given minimum.
+    """
     if min_order is None:
         min_order = max(50, int(curve.p ** 0.5))
 
@@ -28,6 +30,22 @@ def find_point_with_min_order(curve, min_order=None, max_try=5_000):
                 if tries >= max_try:
                     raise ValueError("Impossible to find a point with sufficient order.")
     raise ValueError("No valid point found on the curve.")
+
+def robust_basic_rho(P, Q, order, curve, r=3, retries=8):
+    """
+    A robust version of the basic Pollard's rho algorithm that
+    catches and retries if an exception is raised during the
+    computation.
+    """
+    last_err = None
+    for _ in range(retries):
+        try:
+            k_found, _, _, steps = pollard_rho(P, Q, order, curve, r=r)
+            return k_found, steps, True
+        except Exception as e:
+            last_err = e
+            continue
+    return None, None, False
 
 def run_time_complexity_analysis():
     """Run time complexity analysis for all three algorithms."""
@@ -54,90 +72,57 @@ def run_time_complexity_analysis():
     print("=== Pollard's Rho Time Complexity Analysis ===\n")
     
     for p, a, b in test_cases:
-        #print(f"Testing with prime p = {p}")
         curve = EllipticCurve(a, b, p)
-        
-        # Find a point on the curve
-        P = find_curve_point(curve)
-        order = curve.find_order(P)
-        
-        # Choose a secret k (not too large to ensure solvability)
-        k_secret = min(7, order // 2)
+
+        P, order = find_point_with_min_order(curve)
+        k_secret = random.randrange(1, order)
         Q = curve.scalar_mul(k_secret, P)
-        
-        #print(f"  Point P: {P}")
-        #print(f"  Order: {order}")
-        #print(f"  Secret k: {k_secret}")
-        #print(f"  Target Q: {Q}")
-        
+
         results['primes'].append(p)
-        
-        # Test 1: Basic Rho
-        print(" Testing Basic Rho...")
-        start_time = time.time()
-        try:
-            k_found, _, _, steps = pollard_rho(P, Q, order, curve)
-            end_time = time.time()
-            
-            basic_time = end_time - start_time
-            basic_success = (k_found == k_secret)
-            
-            print(f"    Time: {basic_time:.4f}s, Steps: {steps}, Success: {basic_success}")
-            results['basic_rho_times'].append(basic_time)
-            results['basic_rho_success'].append(basic_success)
-            
-        except Exception as e:
-            end_time = time.time()
-            basic_time = end_time - start_time
-            #print(f"    Failed: {e} (Time: {basic_time:.4f}s)")
-            results['basic_rho_times'].append(basic_time)
-            results['basic_rho_success'].append(False)
-        
-        # Test 2: Additive Walk Rho
+        print(f"[p={p}] ordre(P)={order}, k_secret={k_secret}")
+
+        # --- Basic Rho (robuste)
+        print("  Testing Basic Rho (robust)...")
+        t0 = time.time()
+        k_found, steps, ok = robust_basic_rho(P, Q, order, curve, r=3, retries=10)
+        t1 = time.time()
+        basic_time = t1 - t0
+        basic_success = (ok and ((k_found - k_secret) % order == 0))
+        print(f"    Time: {basic_time:.4f}s, Steps: {steps}, Success: {basic_success}")
+        results['basic_rho_times'].append(basic_time)
+        results['basic_rho_success'].append(basic_success)
+
+        # --- Additive Walk
         print("  Testing Additive Walk Rho...")
-        start_time = time.time()
+        t0 = time.time()
         try:
-            k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished, max_attempts=5)
-            end_time = time.time()
-            
-            additive_time = end_time - start_time
-            additive_success = (k_found == k_secret) if k_found is not None else False
-            
-            print(f"    Time: {additive_time:.4f}s, Success: {additive_success}")
-            results['additive_walk_times'].append(additive_time)
-            results['additive_walk_success'].append(additive_success)
-            
-        except Exception as e:
-            end_time = time.time()
-            additive_time = end_time - start_time
-            print(f"    Failed: {e} (Time: {additive_time:.4f}s)")
-            results['additive_walk_times'].append(additive_time)
-            results['additive_walk_success'].append(False)
-        
-        # Test 3: Negation Map Rho
-        print(" Testing Negation Map Rho...")
-        start_time = time.time()
+            k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished, max_attempts=6)
+            additive_success = (k_found is not None and ((k_found - k_secret) % order == 0))
+        except Exception:
+            additive_success = False
+        t1 = time.time()
+        additive_time = t1 - t0
+        print(f"    Time: {additive_time:.4f}s, Success: {additive_success}")
+        results['additive_walk_times'].append(additive_time)
+        results['additive_walk_success'].append(additive_success)
+
+        # --- Negation Map
+        print("  Testing Negation Map Rho...")
+        t0 = time.time()
         try:
             solver = NegationMapRho(curve, P, Q, order, r=32)
-            k_found = solver.solve_ecdlp(max_walks=100)
-            end_time = time.time()
-            
-            negation_time = end_time - start_time
-            negation_success = (k_found == k_secret) if k_found is not None else False
-            
-            print(f"    Time: {negation_time:.4f}s, Success: {negation_success}")
-            results['negation_map_times'].append(negation_time)
-            results['negation_map_success'].append(negation_success)
-            
-        except Exception as e:
-            end_time = time.time()
-            negation_time = end_time - start_time
-            print(f"    Failed: {e} (Time: {negation_time:.4f}s)")
-            results['negation_map_times'].append(negation_time)
-            results['negation_map_success'].append(False)
-        
+            k_found = solver.solve_ecdlp(max_walks=400)
+            negation_success = (k_found is not None and ((k_found - k_secret) % order == 0))
+        except Exception:
+            negation_success = False
+        t1 = time.time()
+        negation_time = t1 - t0
+        print(f"    Time: {negation_time:.4f}s, Success: {negation_success}")
+        results['negation_map_times'].append(negation_time)
+        results['negation_map_success'].append(negation_success)
+
         print()
-    
+
     return results
 
 def print_summary(results):
