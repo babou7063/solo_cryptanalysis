@@ -34,18 +34,20 @@ def find_point_with_min_order(curve, min_order=None, max_try=5_000):
 def robust_basic_rho(P, Q, order, curve, r=3, retries=8):
     """
     A robust version of the basic Pollard's rho algorithm that
-    catches and retries if an exception is raised during the
-    computation.
+    runs the algorithm multiple times and returns the first successful
+    result. If all attempts fail, return None, None, False, and a dictionary
+    containing the number of operations performed.
     """
     last_err = None
     for _ in range(retries):
         try:
-            k_found, _, _, steps = pollard_rho(P, Q, order, curve, r=r)
-            return k_found, steps, True
+            k_found, _, _, steps, ops = pollard_rho(P, Q, order, curve, r=r)
+            return k_found, steps, True, ops
         except Exception as e:
             last_err = e
             continue
-    return None, None, False
+    return None, None, False, {'adds':0,'dbls':0,'total':0}
+
 
 def run_time_complexity_analysis():
     """Run time complexity analysis for all three algorithms."""
@@ -66,7 +68,13 @@ def run_time_complexity_analysis():
         'negation_map_times': [],
         'basic_rho_success': [],
         'additive_walk_success': [],
-        'negation_map_success': []
+        'negation_map_success': [],
+        'basic_ops': [], 
+        'additive_ops': [], 
+        'negation_ops': [],
+        'basic_ops_precompute': [], 
+        'additive_ops_precompute': [], 
+        'negation_ops_precompute': []
     }
     
     print("=== Pollard's Rho Time Complexity Analysis ===\n")
@@ -84,20 +92,31 @@ def run_time_complexity_analysis():
         # --- Basic Rho (robuste)
         print("  Testing Basic Rho (robust)...")
         t0 = time.time()
-        k_found, steps, ok = robust_basic_rho(P, Q, order, curve, r=3, retries=10)
+        k_found, steps, ok, ops = robust_basic_rho(P, Q, order, curve, r=3, retries=10)
         t1 = time.time()
         basic_time = t1 - t0
         basic_success = (ok and ((k_found - k_secret) % order == 0))
         print(f"    Time: {basic_time:.4f}s, Steps: {steps}, Success: {basic_success}")
         results['basic_rho_times'].append(basic_time)
         results['basic_rho_success'].append(basic_success)
+        if basic_success:
+            results['basic_ops'].append(ops['total'])
+            results['basic_ops_precompute'].append(0)  # pas de précomp pour basic
+        else:
+            results['basic_ops'].append(None); results['basic_ops_precompute'].append(None)
+
 
         # --- Additive Walk
         print("  Testing Additive Walk Rho...")
         t0 = time.time()
         try:
-            k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished, max_attempts=6)
+            k_found, stats = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished, max_attempts=6, return_stats=True)
             additive_success = (k_found is not None and ((k_found - k_secret) % order == 0))
+            if additive_success:
+                results['additive_ops'].append(stats['ops_total'])
+                results['additive_ops_precompute'].append(stats['ops_precompute'])
+            else:
+                results['additive_ops'].append(None); results['additive_ops_precompute'].append(None)
         except Exception:
             additive_success = False
         t1 = time.time()
@@ -111,8 +130,14 @@ def run_time_complexity_analysis():
         t0 = time.time()
         try:
             solver = NegationMapRho(curve, P, Q, order, r=32)
-            k_found = solver.solve_ecdlp(max_walks=400)
+            k_found, stats = solver.solve_ecdlp(max_walks=400, return_stats=True)
             negation_success = (k_found is not None and ((k_found - k_secret) % order == 0))
+            if negation_success:
+                results['negation_ops'].append(stats['ops_total'])
+                results['negation_ops_precompute'].append(stats['ops_precompute'])
+            else:
+                results['negation_ops'].append(None); results['negation_ops_precompute'].append(None)
+
         except Exception:
             negation_success = False
         t1 = time.time()
@@ -271,10 +296,45 @@ def plot_results(results):
     plt.tight_layout()
     plt.show()
 
+def plot_ops(results):
+    import numpy as np
+    def filt(xs, ys):
+        xs2, ys2 = [], []
+        for x,y in zip(xs,ys):
+            if y is not None:
+                xs2.append(x); ys2.append(y)
+        return xs2, ys2
+
+    primes = results['primes']
+    b_ops, b_x = filt(primes, results['basic_ops'])
+    a_ops, a_x = filt(primes, results['additive_ops'])
+    n_ops, n_x = filt(primes, results['negation_ops'])
+
+    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(14,5))
+
+    # Ops vs p
+    if b_ops: ax1.plot(b_x, b_ops, 'bo-', label='Basic Rho (ops)')
+    if a_ops: ax1.plot(a_x, a_ops, 'rs-', label='Additive Walk (ops)')
+    if n_ops: ax1.plot(n_x, n_ops, 'g^-', label='Negation Map (ops)')
+    ax1.set_xlabel('Prime p'); ax1.set_ylabel('Group operations')
+    ax1.set_title('Group ops per success'); ax1.set_yscale('log'); ax1.grid(True, alpha=.3); ax1.legend()
+
+    # Théorie ~ c·√p (échelle ops)
+    theor = [np.sqrt(p) for p in primes]
+    ax2.plot(primes, theor, 'k--', label='~√p (proxy)')
+    if b_ops: ax2.plot(b_x, b_ops, 'bo-', label='Basic Rho (ops)')
+    if a_ops: ax2.plot(a_x, a_ops, 'rs-', label='Additive Walk (ops)')
+    if n_ops: ax2.plot(n_x, n_ops, 'g^-', label='Negation Map (ops)')
+    ax2.set_xlabel('Prime p'); ax2.set_ylabel('Group operations')
+    ax2.set_title('Ops vs √p (indicatif)'); ax2.set_yscale('log'); ax2.grid(True, alpha=.3); ax2.legend()
+
+    plt.tight_layout(); plt.show()
+
+
 if __name__ == "__main__":
     
     results = run_time_complexity_analysis()
     
     #print_summary(results)
-    
-    plot_results(results)
+    plot_ops(results)
+    #plot_results(results)

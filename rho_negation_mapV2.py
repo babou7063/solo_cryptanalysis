@@ -25,13 +25,13 @@ class NegationMapRho:
     
     def __init__(self, curve, P, Q, order, r=64):
         """
-        Initialize the small-scale ECDLP solver.
-        
-        :param curve: EllipticCurve instance
-        :param P: Base point
-        :param Q: Target point (Q = k*P, we want to find k)
-        :param order: Order of point P
-        :param r: Size of precomputed table
+        Initialize a NegationMapRho instance.
+
+        :param curve: the elliptic curve
+        :param P: the point P
+        :param Q: the point Q
+        :param order: the order of the curve
+        :param r: (optional) the size of the precomputed table (default 64)
         """
         self.curve = curve
         self.P = P
@@ -39,6 +39,10 @@ class NegationMapRho:
         self.order = order
         self.r = r
         self.precomputed_table = self.generate_precomputed_table()
+        
+        self.curve.reset_op_counters()
+        self.precomputed_table = self.generate_precomputed_table()
+        self.precomp_ops = self.curve.get_op_counters()
         
         # Statistics
         self.fruitless_cycles_detected = 0
@@ -249,7 +253,7 @@ class NegationMapRho:
         
         return None
     
-    def solve_ecdlp(self, max_walks=1000):
+    def solve_ecdlp(self, max_walks=1000, return_stats=False):
         """
         Solve the elliptic curve discrete logarithm problem using the Pollard rho algorithm.
 
@@ -267,6 +271,7 @@ class NegationMapRho:
         #print(f"  Table size r: {self.r}")
         #print(f"  Expected ~{(3.14159 * self.order / 4) ** 0.5:.0f} iterations per walk")
         
+        self.curve.reset_op_counters()
         distinguished_points = {}
         
         for walk_id in range(max_walks):
@@ -310,22 +315,23 @@ class NegationMapRho:
                     # Verify the result
                     verification = self.curve.scalar_mul(k, self.P)
                     if verification == self.Q:
-                        #print("Verification successful!")
-                        #print(f"Total walks: {self.walks_performed}")
-                        #print(f"Fruitless cycles: {self.fruitless_cycles_detected}")
-                        #print(f"Cycle escapes: {self.cycle_escapes}")
-                        return k
+                        walk_ops = self.curve.get_op_counters()
+                        stats = {
+                            "ops_adds": walk_ops["adds"] + self.precomp_ops["adds"],
+                            "ops_dbls": walk_ops["dbls"] + self.precomp_ops["dbls"],
+                            "ops_total": walk_ops["total"] + self.precomp_ops["total"],
+                            "ops_precompute": self.precomp_ops["total"],
+                            "walks": self.walks_performed,
+                            "r": self.r
+                        }
+                        return k, stats
                     else:
-                        #print("Verification failed!")
                         continue
                         
                 except Exception as e:
-                    #print(f"Failed to compute solution: {e}")
                     continue
             else:
                 distinguished_points[point_key] = (a, b, walk_id)
-        
-        #print("No collision found within walk limit")
         return None
 
 
