@@ -16,6 +16,7 @@ from utils import modinv
 import random
 import hashlib
 import time
+import math
 
 class NegationMapRho:
     """
@@ -23,7 +24,7 @@ class NegationMapRho:
     Uses the negation map and additive walks like the mod128 version but simpler.
     """
     
-    def __init__(self, curve, P, Q, order, r=64):
+    def __init__(self, curve, P, Q, order, r=64, dp_bits=None, alpha=8, max_iter_factor=8):
         """
         Initialize a NegationMapRho instance.
 
@@ -38,12 +39,21 @@ class NegationMapRho:
         self.Q = Q
         self.order = order
         self.r = r
-        self.precomputed_table = self.generate_precomputed_table()
         
         self.curve.reset_op_counters()
         self.precomputed_table = self.generate_precomputed_table()
         self.precomp_ops = self.curve.get_op_counters()
-        
+
+        # --- dynamic DP ---
+        if dp_bits is None:
+            t = int(round(math.log2(max(2, int(math.isqrt(self.order) // max(1, alpha))))))
+            self.dp_bits = max(1, min(24, t))
+        else:
+            self.dp_bits = max(1, int(dp_bits))
+        self.dp_mask = (1 << self.dp_bits) - 1
+
+        self.max_iterations = max(512, int(max_iter_factor * math.isqrt(self.order)))
+
         # Statistics
         self.fruitless_cycles_detected = 0
         self.cycle_escapes = 0
@@ -204,10 +214,9 @@ class NegationMapRho:
 
         if point.at_infinity:
             return False
-        # Use trailing zeros in x-coordinate (adjust for difficulty)
-        return (point.x & 0x7) == 0  # 3 trailing zero bits
+        return (point.x & self.dp_mask) == 0
     
-    def single_walk(self, max_iterations=100000):
+    def single_walk(self, max_iterations=None):
         """
         Perform a single walk until hitting a distinguished point.
         Start at a random point W = aP + bQ
@@ -228,8 +237,9 @@ class NegationMapRho:
         
         history = [W]
         cycle_check_freq = max(1, int(2 * (self.r ** 0.5)))  # Check every ~2√r steps
-        
-        for i in range(max_iterations):
+
+        limit = self.max_iterations if max_iterations is None else max_iterations
+        for i in range(limit):
             # Periodically check for fruitless cycles
             if i % cycle_check_freq == 0 and self.detect_fruitless_cycle(history):
                 W = self.escape_fruitless_cycle(history)

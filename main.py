@@ -57,8 +57,8 @@ def robust_basic_rho(P, Q, order, curve, r=3, retries=8):
             continue
     return None, None, False, {'adds':0,'dbls':0,'total':0}
 
-def make_is_distinguished(n, min_bits=3):
-    t_bits = max(min_bits, int(round(math.log2(max(2, int(math.sqrt(n) // 8))))))
+def make_is_distinguished(n, alpha=8, min_bits=1):
+    t_bits = max(min_bits, int(round(math.log2(max(2, int(math.isqrt(n) // max(1, alpha)))))))
     mask = (1 << t_bits) - 1
     def _pred(W):
         return (not W.at_infinity) and ((W.x & mask) == 0)
@@ -100,9 +100,10 @@ def run_time_complexity_analysis():
 
         P, order = find_point_with_min_order(curve)
         ell = largest_prime_factor(order)
-        h = order // ell
-        P = curve.scalar_mul(h, P)
-        order = ell
+        if ell >= max(int(math.sqrt(order)), 16):
+            h = order // ell
+            P = curve.scalar_mul(h, P)
+            order = ell
         k_secret = random.randrange(1, order)
         Q = curve.scalar_mul(k_secret, P)
 
@@ -131,7 +132,7 @@ def run_time_complexity_analysis():
         print("  Testing Additive Walk Rho...")
         t0 = time.time()
         try:
-            dp_pred = make_is_distinguished(order)
+            dp_pred = make_is_distinguished(order, alpha=2, min_bits=2)
             k_found, stats = retry_walks(P, Q, order, curve, r=8, is_distinguished=dp_pred, max_attempts=6, return_stats=True)
             additive_success = (k_found is not None and ((k_found - k_secret) % order == 0))
             if additive_success:
@@ -152,7 +153,7 @@ def run_time_complexity_analysis():
         t0 = time.time()
         try:
             solver = NegationMapRho(curve, P, Q, order, r=32)
-            k_found, stats = solver.solve_ecdlp(max_walks=400, return_stats=True)
+            k_found, stats = solver.solve_ecdlp(max_walks=800, return_stats=True)
             negation_success = (k_found is not None and ((k_found - k_secret) % order == 0))
             if negation_success:
                 results['negation_ops'].append(stats['ops_total'])
@@ -319,38 +320,83 @@ def plot_results(results):
     plt.show()
 
 def plot_ops(results):
-    import numpy as np
-    def filt(xs, ys):
-        xs2, ys2 = [], []
-        for x,y in zip(xs,ys):
-            if y is not None:
-                xs2.append(x); ys2.append(y)
-        return xs2, ys2
+    orders = results.get('orders', [])  # n effectifs
 
-    primes = results['primes']
-    b_ops, b_x = filt(primes, results['basic_ops'])
-    a_ops, a_x = filt(primes, results['additive_ops'])
-    n_ops, n_x = filt(primes, results['negation_ops'])
+    def filt(xn, total, pre):
+        """Filtre (n, total_ops, precomp_ops) -> (x triés, total, walk, pre)."""
+        xs, tot, walk, prec = [], [], [], []
+        for n, t, p in zip(xn, total, pre):
+            if n is None or t is None or p is None:
+                continue
+            xs.append(int(n))
+            tot.append(int(t))
+            prec.append(int(p))
+            walk.append(max(int(t) - int(p), 0))
+        # tri par abscisse
+        pairs = sorted(zip(xs, tot, walk, prec), key=lambda z: z[0])
+        if not pairs:
+            return [], [], [], []
+        xs, tot, walk, prec = map(list, zip(*pairs))
+        return xs, tot, walk, prec
 
-    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(14,5))
+    # Récupération et séparation walk / précomp (déjà triés par n)
+    b_x, b_tot, b_walk, b_pre = filt(
+        orders, results.get('basic_ops', []), results.get('basic_ops_precompute', [])
+    )
+    a_x, a_tot, a_walk, a_pre = filt(
+        orders, results.get('additive_ops', []), results.get('additive_ops_precompute', [])
+    )
+    n_x, n_tot, n_walk, n_pre = filt(
+        orders, results.get('negation_ops', []), results.get('negation_ops_precompute', [])
+    )
 
-    # Ops vs p
-    if b_ops: ax1.plot(b_x, b_ops, 'bo-', label='Basic Rho (ops)')
-    if a_ops: ax1.plot(a_x, a_ops, 'rs-', label='Additive Walk (ops)')
-    if n_ops: ax1.plot(n_x, n_ops, 'g^-', label='Negation Map (ops)')
-    ax1.set_xlabel('Prime p'); ax1.set_ylabel('Group operations')
-    ax1.set_title('Group ops per success'); ax1.set_yscale('log'); ax1.grid(True, alpha=.3); ax1.legend()
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
-    # Théorie ~ c·√p (échelle ops)
-    theor = [np.sqrt(n) for n in results['orders']]
-    ax2.plot(results['orders'], theor, 'k--', label='~√n (proxy)')
-    if b_ops: ax2.plot(b_x, b_ops, 'bo-', label='Basic Rho (ops)')
-    if a_ops: ax2.plot(a_x, a_ops, 'rs-', label='Additive Walk (ops)')
-    if n_ops: ax2.plot(n_x, n_ops, 'g^-', label='Negation Map (ops)')
-    ax2.set_xlabel('Prime p'); ax2.set_ylabel('Group operations')
-    ax2.set_title('Ops vs √p (indicatif)'); ax2.set_yscale('log'); ax2.grid(True, alpha=.3); ax2.legend()
+    # --- Gauche : ops WALK vs n, avec réf c·√n ---
+    if b_walk: ax1.plot(b_x, b_walk, 'bo-', label='Basic (walk)')
+    if a_walk: ax1.plot(a_x, a_walk, 'rs-', label='Additive (walk)')
+    if n_walk: ax1.plot(n_x, n_walk, 'g^-', label='Negation (walk)')
 
-    plt.tight_layout(); plt.show()
+    # Référence c·√n calibrée sur la médiane(ops/√n) tous algos confondus
+    xs_ref = sorted(set(b_x + a_x + n_x)) or sorted(set(int(x) for x in orders))
+    if xs_ref:
+        ratios = []
+        for xs, ws in ((b_x, b_walk), (a_x, a_walk), (n_x, n_walk)):
+            ratios += [w / math.sqrt(x) for x, w in zip(xs, ws) if x > 0 and w > 0]
+        c = float(np.median(ratios)) if ratios else 1.0
+        ax1.plot(xs_ref, [c * math.sqrt(x) for x in xs_ref], 'k--', label='c·√n')
+
+    ax1.set_xscale('log'); ax1.set_yscale('log')
+    ax1.set_xlabel('Subgroup order n')
+    ax1.set_ylabel('Group operations (walk only)')
+    ax1.set_title('Group ops per success (WALK only) vs n')
+    ax1.grid(True, alpha=.3); ax1.legend()
+
+    # --- Droite : barres empilées (moyenne PRECOMP + WALK) par algo ---
+    def avg(arr):
+        arr = [x for x in arr if x is not None]
+        return float(np.mean(arr)) if arr else 0.0
+
+    bars_labels, pre_vals, walk_vals = [], [], []
+
+    if b_tot:
+        bars_labels.append('Basic');    pre_vals.append(avg(b_pre)); walk_vals.append(avg(b_walk))
+    if a_tot:
+        bars_labels.append('Additive'); pre_vals.append(avg(a_pre)); walk_vals.append(avg(a_walk))
+    if n_tot:
+        bars_labels.append('Negation'); pre_vals.append(avg(n_pre)); walk_vals.append(avg(n_walk))
+
+    x_pos = np.arange(len(bars_labels))
+    ax2.bar(x_pos, pre_vals, label='Precompute', alpha=0.7)
+    ax2.bar(x_pos, walk_vals, bottom=pre_vals, label='Walk', alpha=0.9)
+    ax2.set_xticks(x_pos, bars_labels)
+    ax2.set_ylabel('Avg group operations')
+    ax2.set_title('Average ops per success (stacked: precomp + walk)')
+    ax2.grid(True, axis='y', alpha=.3)
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == "__main__":
