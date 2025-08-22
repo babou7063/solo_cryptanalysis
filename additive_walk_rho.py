@@ -232,7 +232,7 @@ def retry_walks(P, Q, order, curve, r, is_distinguished, max_attempts=10, walks_
 
     return (None, None) if return_stats else None
 
-
+"""
 ##########################################
 #                  Test                  #
 ##########################################
@@ -250,4 +250,4 @@ Q = curve.scalar_mul(k_secret, P)
 
 k_found = retry_walks(P, Q, order, curve, r=8, is_distinguished=is_distinguished, max_attempts=10, walks_per_attempt=64, max_steps=10_000)
 print(f"Recovered k = {k_found}")
-
+"""

@@ -1,6 +1,6 @@
 # Cryptanalysis Project: Pollard's Rho Algorithms for Elliptic Curve Discrete Logarithm
 
-This project implements several variants of Pollard's rho algorithm for solving the discrete logarithm problem (DLP) on elliptic curves. The implementation includes basic walks, additive walks, and an optimized version over the finite field ℤ/(2^128 - 3)ℤ with negation maps. Given points P and Q on an elliptic curve, where Q = kP for some unknown scalar k, the goal is to efficiently find k.
+This project implements several variants of Pollard's rho algorithm for solving the discrete logarithm problem (DLP) on elliptic curves. The implementation includes basic walks, additive walks, and an optimized version with negation maps. Given points P and Q on an elliptic curve, where Q = kP for some unknown scalar k, the goal is to efficiently find k.
 
 
 ## Theoretical References
@@ -34,7 +34,7 @@ This project implements several variants of Pollard's rho algorithm for solving 
 ### Algorithm Implementations
 1. **Basic Rho** (`basic_rho.py`) : Classical Floyd's cycle detection
 2. **Additive Walk** (`additive_walk_rho.py`) : Precomputed table-based walks
-3. **Negation Map Optimization** (`rho_mod128.py`) : Advanced variant with fruitless cycle detection
+3. **Negation Map Optimization** (`rho_negation_mapV2.py`) : Advanced variant with fruitless cycle detection
 
 ### Documentation
 Detailed documentation for each algorithm is available in the `docs/` directory:
@@ -50,7 +50,7 @@ Detailed documentation for each algorithm is available in the `docs/` directory:
 ### Launch test
 
 ```python
-...
+python3 main.py
 ```
 
 ## Algorithm Comparison
@@ -62,5 +62,3 @@ Detailed documentation for each algorithm is available in the `docs/` directory:
 | Negation Map | O(√n/2) | O(r) | Fruitless cycle detection, canonical forms |
 
 Where n is the order of the base point and r is the precomputed table size.
-
-# TODO -> rajouter ma comparaison

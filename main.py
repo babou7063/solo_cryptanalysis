@@ -404,5 +404,6 @@ if __name__ == "__main__":
     results = run_time_complexity_analysis()
     
     #print_summary(results)
+    plot_results(results)
     plot_ops(results)
-    #plot_results(results)
+    
